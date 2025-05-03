@@ -1,0 +1,31 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    command: sleep infinity
+
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+
+    volumes:
+      - type: volume
+        source: mod.cache.go.dev
+        target: /go/pkg/mod
+      - type: volume
+        source: bin.cache.go.dev
+        target: /home/hypnos/.cache/go-build
+      - type: bind
+        source: ${HOME}/workspace
+        target: /workspaces
+      - type: bind
+        source: ..
+        target: /workspace/grpc-wasm
+
+volumes:
+  mod.cache.go.dev:
+  bin.cache.go.dev:

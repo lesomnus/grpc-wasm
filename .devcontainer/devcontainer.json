@@ -1,0 +1,15 @@
+{
+	"name": "lesomnus.grpc-wasm",
+	"dockerComposeFile": "docker-compose.yaml",
+	"service": "dev",
+	"workspaceFolder": "/workspace/grpc-wasm",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.go",
+				"jinliming2.vscode-go-template",
+				"streetsidesoftware.code-spell-checker"
+			]
+		}
+	}
+}

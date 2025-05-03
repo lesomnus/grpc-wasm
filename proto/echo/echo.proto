@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package echo;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/lesomnus/grpc-wasm/internal/echo";
+
+
+service EchoService {
+	rpc Unary(Echo) returns (Echo) {};
+	rpc ClientStream(stream Echo) returns (Echo) {};
+	rpc ServerStream(Echo) returns (stream Echo) {};
+	rpc BidiStream(stream Echo) returns (stream Echo) {};
+}
+
+message Error {
+	uint32 code = 1;
+	string message = 2;
+}
+
+message Echo {
+	Error error = 1;
+
+	string message = 2;
+	uint64 sequence = 3;
+
+	google.protobuf.Timestamp date_created = 15;
+}
