@@ -110,19 +110,23 @@ func (c *Conn) JsInvoke(this js.Value, args []js.Value) any {
 
 // Signature:
 //
-//	type StreamResult = {
-//		trailer: Metadata
-//		status: Status
-//	}
+//	type StreamResult =
+//		| {
+//			response: Uint8Array;
+//		}
+//		| {
+//			trailer: Metadata;
+//			status: RpcStatus;
+//		};
 //	type Stream = {
 //		header: ()=>Promise<Metadata>
 //		close: ()=>Promise<void>
 //		close_send: ()=>Promise<void>
 //		send: (Uint8Array)=>Promise<void>
-//		recv: ()=>Promise<{ response: Uint8Array } | StreamResult>
+//		recv: ()=>Promise<StreamResult>
 //	}
 //	function(method: string, option: {meta?: Metadata}): Promise<Stream>;
-func (c *Conn) JsBidiStream(this js.Value, args []js.Value) any {
+func (c *Conn) JsOpenBidiStream(this js.Value, args []js.Value) any {
 	return c.scope.Promise(func() (js.Value, js.Value) {
 		if len(args) != 2 {
 			return js.Undefined(), jz.Error("expects 2 arguments: method, and option")
@@ -189,7 +193,10 @@ func (c *Conn) JsBidiStream(this js.Value, args []js.Value) any {
 					data := []byte{}
 					err := stream.RecvMsg(&data)
 					if err == nil {
-						return jz.BytesToJs(data), js.Undefined()
+						return js.ValueOf(map[string]any{
+							"done":     js.ValueOf(false),
+							"response": jz.BytesToJs(data),
+						}), js.Undefined()
 					}
 
 					st := status.Status{}
@@ -205,6 +212,7 @@ func (c *Conn) JsBidiStream(this js.Value, args []js.Value) any {
 
 					md := stream.Trailer()
 					return js.ValueOf(map[string]any{
+						"done":    js.ValueOf(true),
 						"trailer": metaToJs(md),
 						"status":  statusToJs(&st),
 					}), js.Undefined()
@@ -218,5 +226,7 @@ func (c Conn) ToJsValue() js.Value {
 	return js.ValueOf(map[string]any{
 		"close":  c.scope.FuncOf(c.JsClose),
 		"invoke": c.scope.FuncOf(c.JsInvoke),
+
+		"open_bidi_stream": c.scope.FuncOf(c.JsOpenBidiStream),
 	})
 }

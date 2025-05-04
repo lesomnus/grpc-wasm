@@ -5,13 +5,6 @@ export type RpcStatus = {
 	message: string;
 };
 
-export type RpcResult = {
-	header: Metadata;
-	trailer: Metadata;
-	response: Uint8Array;
-	status: RpcStatus;
-};
-
 export type Metadata = {
 	[key: string]: string[] | undefined;
 };
@@ -19,3 +12,21 @@ export type Metadata = {
 export type CallOption = {
 	meta?: Metadata;
 };
+
+export type RpcResult = {
+	header: Metadata;
+	trailer: Metadata;
+	response: Uint8Array;
+	status: RpcStatus;
+};
+
+export type StreamResult =
+	| {
+			done: false;
+			response: Uint8Array;
+	  }
+	| {
+			done: true;
+			trailer: Metadata;
+			status: RpcStatus;
+	  };

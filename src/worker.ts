@@ -6,7 +6,8 @@ import { expose } from "threads/worker";
 
 import "./wasm_exec";
 import { Defer } from "./defer";
-import type { CallOption, RpcResult } from "./types";
+import { Table } from "./table";
+import type { CallOption, Metadata, RpcResult, StreamResult } from "./types";
 import type { Go } from "./wasm_exec";
 
 export type ConnId = number;
@@ -18,6 +19,12 @@ export type BridgeWorker = {
 	dial(): Promise<ConnId>;
 	close(id: ConnId): Promise<void>;
 	invoke(id: ConnId, method: string, req: Uint8Array, option: CallOption): Promise<RpcResult>;
+	open_bidi_stream(id: ConnId, method: string, option: { meta?: Metadata }): Promise<StreamId>;
+	stream_header(id: StreamId): Promise<Metadata>;
+	stream_close(id: StreamId): Promise<void>;
+	stream_close_send(id: StreamId): Promise<void>;
+	stream_send(id: StreamId, req: Uint8Array): Promise<void>;
+	stream_recv(id: StreamId): Promise<StreamResult>;
 };
 
 interface Socket {
@@ -28,6 +35,16 @@ interface Socket {
 type Conn = {
 	close(): Promise<void>;
 	invoke(method: string, req: Uint8Array, option: CallOption): Promise<RpcResult>;
+	open_bidi_stream(method: string, option: { meta?: Metadata }): Promise<Stream>;
+};
+
+type Stream = {
+	conn: Conn;
+	header(): Promise<Metadata>;
+	close(): Promise<void>;
+	close_send(): Promise<void>;
+	send(req: Uint8Array): Promise<void>;
+	recv(): Promise<StreamResult>;
 };
 
 type Bridge = {
@@ -94,33 +111,8 @@ function isStopped(): boolean {
 }
 
 const ready = new Defer<Bridge>();
-const conns = new (class ConnTable {
-	// 0 is reserved.
-	// Negative numbers are considered to be an error.
-	private ticket: ConnId = 1;
-	private conns = new Map<ConnId, Conn>();
-
-	set(conn: Conn): ConnId {
-		const n = this.ticket++;
-		this.conns.set(n, conn);
-		return n;
-	}
-	get(id: ConnId): Conn | undefined {
-		return this.conns.get(id);
-	}
-	must(id: ConnId): Conn {
-		const v = this.get(id);
-		if (v == undefined) {
-			throw new Error(`unknown connection: ${id}`);
-		}
-		return v;
-	}
-	delete(id: ConnId): Conn | undefined {
-		const v = this.get(id);
-		if (v) this.conns.delete(id);
-		return v;
-	}
-})();
+const conns = new Table<ConnId, Conn>();
+const streams = new Table<StreamId, Stream>();
 
 expose({
 	start(app: string | WebAssembly.Module): Promise<void> {
@@ -177,13 +169,35 @@ expose({
 		const conn = conns.delete(id);
 		return conn?.close();
 	},
-	async invoke(
-		id: ConnId,
-		method: string,
-		req: Uint8Array,
-		option: CallOption,
-	): Promise<RpcResult> {
+	invoke(id: ConnId, method: string, req: Uint8Array, option: CallOption): Promise<RpcResult> {
 		const conn = conns.must(id);
-		return await conn.invoke(method, req, option);
+		return conn.invoke(method, req, option);
 	},
-} as BridgeWorker);
+	async open_bidi_stream(id, method, option) {
+		const conn = conns.must(id);
+		const stream = await conn.open_bidi_stream(method, option);
+		stream.conn = conn;
+
+		return streams.set(stream);
+	},
+	stream_header(id) {
+		const stream = streams.must(id);
+		return stream.header();
+	},
+	async stream_close(id): Promise<void> {
+		const stream = streams.delete(id);
+		return stream?.close();
+	},
+	stream_close_send(id) {
+		const stream = streams.must(id);
+		return stream.close_send();
+	},
+	stream_send(id, req) {
+		const stream = streams.must(id);
+		return stream.send(req);
+	},
+	stream_recv(id) {
+		const stream = streams.must(id);
+		return stream.recv();
+	},
+} satisfies BridgeWorker);

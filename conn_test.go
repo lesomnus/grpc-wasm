@@ -113,7 +113,7 @@ func TestConn_JsInvoke(t *testing.T) {
 func TestConn_JsBidiStream(t *testing.T) {
 	t.Run("close", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
 		// Client closes the stream without sync.
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{}),
 		}).(js.Value))
@@ -127,7 +127,7 @@ func TestConn_JsBidiStream(t *testing.T) {
 		x.Equal(int(codes.Canceled), v.Get("status").Get("code").Int())
 	}))
 	t.Run("recv and close", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{}),
 		}).(js.Value))
@@ -145,7 +145,7 @@ func TestConn_JsBidiStream(t *testing.T) {
 	}))
 	t.Run("close send", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
 		// Graceful close on both side.
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{}),
 		}).(js.Value))
@@ -160,7 +160,7 @@ func TestConn_JsBidiStream(t *testing.T) {
 		x.Equal(int(codes.OK), v.Get("status").Get("code").Int())
 	}))
 	t.Run("recv and close send", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{}),
 		}).(js.Value))
@@ -177,7 +177,7 @@ func TestConn_JsBidiStream(t *testing.T) {
 		x.Equal(int(codes.OK), v.Get("status").Get("code").Int())
 	}))
 	t.Run("send and recv", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{}),
 		}).(js.Value))
@@ -194,14 +194,15 @@ func TestConn_JsBidiStream(t *testing.T) {
 
 		v, err_js := jz.Await(stream.Call("recv"))
 		x.True(err_js.IsUndefined())
+		x.False(v.Get("done").Bool())
 
 		res := echo.EchoResponse{}
-		err = protoUnmarshal(v, &res)
+		err = protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal("skiLebow", res.GetMessage())
 	}))
 	t.Run("recv and send", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{}),
 		}).(js.Value))
@@ -221,14 +222,15 @@ func TestConn_JsBidiStream(t *testing.T) {
 
 		v, err_js := jz.Await(p)
 		x.True(err_js.IsUndefined())
+		x.False(v.Get("done").Bool())
 
 		res := echo.EchoResponse{}
-		err = protoUnmarshal(v, &res)
+		err = protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal("skiLebow", res.GetMessage())
 	}))
 	t.Run("send multiple", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{}),
 		}).(js.Value))
@@ -249,24 +251,24 @@ func TestConn_JsBidiStream(t *testing.T) {
 		res := echo.EchoResponse{}
 		v, err_js := jz.Await(stream.Call("recv"))
 		x.True(err_js.IsUndefined())
-		err = protoUnmarshal(v, &res)
+		err = protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal(uint32(0), res.GetSequence())
 
 		v, err_js = jz.Await(stream.Call("recv"))
 		x.True(err_js.IsUndefined())
-		err = protoUnmarshal(v, &res)
+		err = protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal(uint32(1), res.GetSequence())
 
 		v, err_js = jz.Await(stream.Call("recv"))
 		x.True(err_js.IsUndefined())
-		err = protoUnmarshal(v, &res)
+		err = protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal(uint32(2), res.GetSequence())
 	}))
 	t.Run("recv many", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{}),
 		}).(js.Value))
@@ -284,24 +286,24 @@ func TestConn_JsBidiStream(t *testing.T) {
 		res := echo.EchoResponse{}
 		v, err_js := jz.Await(stream.Call("recv"))
 		x.True(err_js.IsUndefined())
-		err = protoUnmarshal(v, &res)
+		err = protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal(uint32(0), res.GetSequence())
 
 		v, err_js = jz.Await(stream.Call("recv"))
 		x.True(err_js.IsUndefined())
-		err = protoUnmarshal(v, &res)
+		err = protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal(uint32(1), res.GetSequence())
 
 		v, err_js = jz.Await(stream.Call("recv"))
 		x.True(err_js.IsUndefined())
-		err = protoUnmarshal(v, &res)
+		err = protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal(uint32(2), res.GetSequence())
 	}))
 	t.Run("error", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{}),
 		}).(js.Value))
@@ -323,7 +325,7 @@ func TestConn_JsBidiStream(t *testing.T) {
 		x.Equal(int(codes.FailedPrecondition), v.Get("status").Get("code").Int())
 	}))
 	t.Run("with metadata", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{
 				"meta": js.ValueOf(map[string]any{
@@ -348,7 +350,7 @@ func TestConn_JsBidiStream(t *testing.T) {
 		x.Equal("trailer", v.Get("trailer").Get("timing").Index(0).String())
 	}))
 	t.Run("close with metadata", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		stream, err_js := jz.Await(conn.JsBidiStream(js.Undefined(), []js.Value{
+		stream, err_js := jz.Await(conn.JsOpenBidiStream(js.Undefined(), []js.Value{
 			js.ValueOf(echo.EchoService_Live_FullMethodName),
 			js.ValueOf(map[string]any{
 				"meta": js.ValueOf(map[string]any{
