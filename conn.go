@@ -4,6 +4,8 @@ package grpcwasm
 
 import (
 	"context"
+	"errors"
+	"io"
 	"syscall/js"
 
 	"github.com/lesomnus/grpc-wasm/internal/jz"
@@ -63,12 +65,12 @@ func (c *Conn) JsInvoke(this js.Value, args []js.Value) any {
 		data := make([]byte, size)
 		js.CopyBytesToGo(data, req)
 
+		ctx := c.ctx
+
 		meta := metadata.MD{}
 		if v := opt.Get("meta"); v.Type() == js.TypeObject {
-			metaFromJsValue(meta, v)
+			metaToGo(meta, v)
 		}
-
-		ctx := c.ctx
 		if meta.Len() > 0 {
 			ctx = metadata.NewOutgoingContext(ctx, meta)
 		}
@@ -98,12 +100,115 @@ func (c *Conn) JsInvoke(this js.Value, args []js.Value) any {
 		js.CopyBytesToJS(js_out, out)
 
 		return js.ValueOf(map[string]any{
-			"header":   metaToJsValue(header),
-			"trailer":  metaToJsValue(trailer),
+			"header":   metaToJs(header),
+			"trailer":  metaToJs(trailer),
 			"response": js_out,
-			"status": js.ValueOf(map[string]any{
-				"code":    js.ValueOf(int(st.Code())),
-				"message": js.ValueOf(st.Message()),
+			"status":   statusToJs(&st),
+		}), js.Undefined()
+	})
+}
+
+// Signature:
+//
+//	type StreamResult = {
+//		trailer: Metadata
+//		status: Status
+//	}
+//	type Stream = {
+//		header: ()=>Promise<Metadata>
+//		close: ()=>Promise<void>
+//		close_send: ()=>Promise<void>
+//		send: (Uint8Array)=>Promise<void>
+//		recv: ()=>Promise<{ response: Uint8Array } | StreamResult>
+//	}
+//	function(method: string, option: {meta?: Metadata}): Promise<Stream>;
+func (c *Conn) JsBidiStream(this js.Value, args []js.Value) any {
+	return c.scope.Promise(func() (js.Value, js.Value) {
+		if len(args) != 2 {
+			return js.Undefined(), jz.Error("expects 2 arguments: method, and option")
+		}
+
+		method := args[0].String()
+		opt := args[1]
+
+		ctx, cancel := context.WithCancel(c.ctx)
+		meta := metadata.MD{}
+		if v := opt.Get("meta"); v.Type() == js.TypeObject {
+			metaToGo(meta, v)
+		}
+		if meta.Len() > 0 {
+			ctx = metadata.NewOutgoingContext(ctx, meta)
+		}
+
+		stream, err := c.NewStream(ctx, &grpc.StreamDesc{ServerStreams: true, ClientStreams: true}, method, grpc.OnFinishCallOption{
+			OnFinish: func(err error) {
+				cancel()
+			},
+		})
+		if err != nil {
+			return js.Undefined(), jz.ToError(err)
+		}
+
+		return js.ValueOf(map[string]any{
+			"header": js.FuncOf(func(this js.Value, args []js.Value) any {
+				return c.scope.Promise(func() (js.Value, js.Value) {
+					md, err := stream.Header()
+					if err != nil {
+						return js.Undefined(), jz.ToError(err)
+					}
+					if md == nil {
+						// the stream was terminated without header.
+						// TODO: reject?
+						md = metadata.MD{}
+					}
+					return metaToJs(md), js.Undefined()
+				})
+			}),
+			"close": js.FuncOf(func(this js.Value, args []js.Value) any {
+				cancel()
+				return jz.Resolve(js.Undefined())
+			}),
+			"close_send": js.FuncOf(func(this js.Value, args []js.Value) any {
+				if err := stream.CloseSend(); err != nil {
+					return jz.Reject(jz.ToError(err))
+				}
+				return jz.Resolve(js.Undefined())
+			}),
+			"send": js.FuncOf(func(this js.Value, args []js.Value) any {
+				return c.scope.Promise(func() (js.Value, js.Value) {
+					req := args[0]
+					data := jz.BytesToGo(req)
+					if err := stream.SendMsg(data); err != nil {
+						return js.Undefined(), jz.ToError(err)
+					}
+					return js.Undefined(), js.Undefined()
+				})
+			}),
+			"recv": js.FuncOf(func(this js.Value, args []js.Value) any {
+				return c.scope.Promise(func() (js.Value, js.Value) {
+					data := []byte{}
+					err := stream.RecvMsg(&data)
+					if err == nil {
+						return jz.BytesToJs(data), js.Undefined()
+					}
+
+					st := status.Status{}
+					eof := errors.Is(err, io.EOF)
+					if !eof {
+						s, ok := status.FromError(err)
+						if !ok {
+							return js.Undefined(), js.ValueOf(err.Error())
+						}
+
+						st = *s
+					}
+
+					md := stream.Trailer()
+					return js.ValueOf(map[string]any{
+						"trailer": metaToJs(md),
+						"status":  statusToJs(&st),
+					}), js.Undefined()
+				})
 			}),
 		}), js.Undefined()
 	})

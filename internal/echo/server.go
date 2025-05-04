@@ -2,6 +2,8 @@ package echo
 
 import (
 	context "context"
+	"errors"
+	"io"
 
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -48,29 +50,62 @@ func (EchoServer) Once(ctx context.Context, req *EchoRequest) (*EchoResponse, er
 		DateCreated: timestamppb.Now(),
 	}.Build(), nil
 }
-func (EchoServer) Many(req *EchoRequest, stream grpc.ServerStreamingServer[EchoResponse]) error {
+func (EchoServer) many(seq *uint32, req *EchoRequest, stream grpc.ServerStreamingServer[EchoResponse]) error {
 	if err := req.Error(); err != nil {
 		return err
 	}
 
 	v := req.GetMessage()
-	for i := range req.GetRepeat() {
+	n := req.GetRepeat()
+	if n == 0 {
+		n = 1
+	}
+	for range n {
 		v = circularShift(v, int(req.GetCircularShift()))
 		if err := stream.Send(EchoResponse_builder{
 			Message:     v,
-			Sequence:    i,
+			Sequence:    *seq,
 			DateCreated: timestamppb.Now(),
 		}.Build()); err != nil {
 			return err
 		}
+
+		*seq++
 	}
 	return nil
+}
+func (s EchoServer) Many(req *EchoRequest, stream grpc.ServerStreamingServer[EchoResponse]) error {
+	seq := uint32(0)
+	return s.many(&seq, req, stream)
 }
 func (EchoServer) Buff(grpc.ClientStreamingServer[EchoRequest, EchoResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Buff not implemented")
 }
-func (EchoServer) Live(grpc.BidiStreamingServer[EchoRequest, EchoResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method Live not implemented")
+func (s EchoServer) Live(stream grpc.BidiStreamingServer[EchoRequest, EchoResponse]) error {
+	ctx := stream.Context()
+	if md, has_md := metadata.FromIncomingContext(ctx); has_md {
+		md := md.Copy()
+		md.Set("timing", "header")
+		if err := stream.SendHeader(md); err != nil {
+			return status.Errorf(codes.Internal, "failed to send header: %v", err)
+		}
+		md.Set("timing", "trailer")
+		stream.SetTrailer(md)
+	}
+
+	seq := uint32(0)
+	for {
+		req, err := stream.Recv()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			return err
+		}
+		if err := s.many(&seq, req, stream); err != nil {
+			return err
+		}
+	}
 }
 
 func circularShift(s string, n int) string {
