@@ -3,11 +3,7 @@ import type { BridgeWorker, ConnId } from "./worker";
 
 export interface Conn {
 	close(): Promise<void>;
-	invoke(
-		method: string,
-		req: Uint8Array,
-		option: CallOption,
-	): Promise<RpcResult>;
+	invoke(method: string, req: Uint8Array, option: CallOption): Promise<RpcResult>;
 }
 
 export class ClientConn implements Conn {
@@ -27,11 +23,7 @@ export class ClientConn implements Conn {
 		return this.close_work;
 	}
 
-	async invoke(
-		method: string,
-		req: Uint8Array,
-		option: CallOption,
-	): Promise<RpcResult> {
+	async invoke(method: string, req: Uint8Array, option: CallOption): Promise<RpcResult> {
 		this.throwIfClosed();
 		return this.worker.invoke(this.id, method, req, option);
 	}

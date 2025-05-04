@@ -10,18 +10,14 @@ import type { CallOption, RpcResult } from "./types";
 import type { Go } from "./wasm_exec";
 
 export type ConnId = number;
+export type StreamId = number;
 
 export type BridgeWorker = {
 	start(app: string | WebAssembly.Module): Promise<void>;
 	stop(): Promise<void>;
 	dial(): Promise<ConnId>;
 	close(id: ConnId): Promise<void>;
-	invoke(
-		id: ConnId,
-		method: string,
-		req: Uint8Array,
-		option: CallOption,
-	): Promise<RpcResult>;
+	invoke(id: ConnId, method: string, req: Uint8Array, option: CallOption): Promise<RpcResult>;
 };
 
 interface Socket {
@@ -31,11 +27,7 @@ interface Socket {
 
 type Conn = {
 	close(): Promise<void>;
-	invoke(
-		method: string,
-		req: Uint8Array,
-		option: CallOption,
-	): Promise<RpcResult>;
+	invoke(method: string, req: Uint8Array, option: CallOption): Promise<RpcResult>;
 };
 
 type Bridge = {

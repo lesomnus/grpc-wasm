@@ -7,8 +7,8 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"ignore": ["lib/proto/*"],
-		"include": ["src/*", ".vscode/*", "vite.config.ts", "biome.json", "tsconfig.*"]
+		"include": ["src/*", ".vscode/*", "vite.config.ts", "biome.json", "tsconfig.*"],
+		"ignore": ["src/test/proto/*", "src/wasm_exec.js"]
 	},
 	"formatter": {
 		"enabled": true,
