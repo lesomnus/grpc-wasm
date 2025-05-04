@@ -8,17 +8,12 @@
 	"files": {
 		"ignoreUnknown": false,
 		"ignore": ["lib/proto/*"],
-		"include": [
-			"src/*",
-			".vscode/*",
-			"vite.config.ts",
-			"biome.json",
-			"tsconfig.*"
-		]
+		"include": ["src/*", ".vscode/*", "vite.config.ts", "biome.json", "tsconfig.*"]
 	},
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "tab"
+		"indentStyle": "tab",
+		"lineWidth": 100
 	},
 	"organizeImports": {
 		"enabled": true

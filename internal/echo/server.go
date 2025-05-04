@@ -2,38 +2,29 @@ package echo
 
 import (
 	context "context"
-	"time"
 
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	status "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func (x *EchoRequest) Error() error {
+	s := x.GetStatus()
+	if s == nil {
+		return nil
+	}
+
+	return status.Error(codes.Code(s.GetCode()), s.GetMessage())
+}
 
 type EchoServer struct {
 	UnimplementedEchoServiceServer
 }
 
-func (x *Echo) Clone() *Echo {
-	return proto.Clone(x).(*Echo)
-}
-
-func (x *Echo) Tick() {
-	if n := x.GetCircularShift(); n != 0 {
-		v := circularShift(x.GetMessage(), int(n))
-		x.SetMessage(v)
-	}
-}
-
-func (x *Status) Error() error {
-	return status.Error(codes.Code(x.GetCode()), x.GetMessage())
-}
-
-func (EchoServer) Unary(ctx context.Context, req *Echo) (*Echo, error) {
-	md, has_md := metadata.FromIncomingContext(ctx)
-	if has_md {
+func (EchoServer) Once(ctx context.Context, req *EchoRequest) (*EchoResponse, error) {
+	if md, has_md := metadata.FromIncomingContext(ctx); has_md {
 		md := md.Copy()
 		md.Set("timing", "header")
 		if err := grpc.SendHeader(ctx, md); err != nil {
@@ -45,34 +36,41 @@ func (EchoServer) Unary(ctx context.Context, req *Echo) (*Echo, error) {
 		}
 	}
 
-	if s := req.GetStatus(); s.GetCode() != int32(codes.OK) {
-		return nil, s.Error()
+	if err := req.Error(); err != nil {
+		return nil, err
 	}
 
-	v := req.Clone()
-	v.SetDateCreated(timestamppb.Now())
-	v.Tick()
-	return v, nil
+	v := req.GetMessage()
+	v = circularShift(v, int(req.GetCircularShift()))
+	return EchoResponse_builder{
+		Message:     v,
+		Sequence:    0,
+		DateCreated: timestamppb.Now(),
+	}.Build(), nil
 }
-func (EchoServer) ClientStream(grpc.ClientStreamingServer[Echo, Echo]) error {
-	return status.Errorf(codes.Unimplemented, "method ClientStream not implemented")
-}
-func (EchoServer) ServerStream(req *Echo, ss grpc.ServerStreamingServer[Echo]) error {
-	i := uint64(0)
-	for ss.Context().Err() == nil {
-		res := req.Clone()
-		res.SetSequence(i)
-		i++
-		if err := ss.Send(res); err != nil {
-			return status.Errorf(codes.Internal, "failed to send response: %v", err)
+func (EchoServer) Many(req *EchoRequest, stream grpc.ServerStreamingServer[EchoResponse]) error {
+	if err := req.Error(); err != nil {
+		return err
+	}
+
+	v := req.GetMessage()
+	for i := range req.GetRepeat() {
+		v = circularShift(v, int(req.GetCircularShift()))
+		if err := stream.Send(EchoResponse_builder{
+			Message:     v,
+			Sequence:    i,
+			DateCreated: timestamppb.Now(),
+		}.Build()); err != nil {
+			return err
 		}
-		time.Sleep(10 * time.Millisecond)
 	}
-
 	return nil
 }
-func (EchoServer) BidiStream(grpc.BidiStreamingServer[Echo, Echo]) error {
-	return status.Errorf(codes.Unimplemented, "method BidiStream not implemented")
+func (EchoServer) Buff(grpc.ClientStreamingServer[EchoRequest, EchoResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Buff not implemented")
+}
+func (EchoServer) Live(grpc.BidiStreamingServer[EchoRequest, EchoResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Live not implemented")
 }
 
 func circularShift(s string, n int) string {

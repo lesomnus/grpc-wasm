@@ -51,40 +51,38 @@ func jsInvoke[T proto.Message](x *require.Assertions, conn *grpcwasm.Conn, metho
 
 func TestConn(t *testing.T) {
 	t.Run("unary", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		req := echo.Echo{}
+		req := echo.EchoRequest{}
 		req.SetMessage("Lebowski")
-		req.SetSequence(42)
 		req.SetCircularShift(3)
 		req.SetDateCreated(timestamppb.Now())
 
-		v, js_err := jsInvoke(x, conn, echo.EchoService_Unary_FullMethodName, &req, nil)
-		x.Equal(js.TypeObject, js_err.Type())
+		v, err_js := jsInvoke(x, conn, string(echo.EchoService_Once_FullMethodName), &req, nil)
+		x.True(err_js.IsUndefined())
 		x.Equal(js.TypeObject, v.Type())
 
-		res := echo.Echo{}
+		res := echo.EchoResponse{}
 		err := protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal("skiLebow", res.GetMessage())
-		x.Equal(req.GetSequence(), res.GetSequence())
 		x.Less(req.GetDateCreated().AsTime(), res.GetDateCreated().AsTime())
 	}))
 	t.Run("unary with error", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		req := echo.Echo{}
+		req := echo.EchoRequest{}
 		req.SetStatus(echo.Status_builder{
 			Code:    int32(codes.FailedPrecondition),
 			Message: "Is this your homework, Larry?",
 		}.Build())
 
-		v, js_err := jsInvoke(x, conn, echo.EchoService_Unary_FullMethodName, &req, nil)
+		v, js_err := jsInvoke(x, conn, echo.EchoService_Once_FullMethodName, &req, nil)
 		x.True(js_err.IsUndefined())
 		x.Equal(js.TypeObject, v.Type())
 		x.Equal(int(codes.FailedPrecondition), v.Get("status").Get("code").Int())
 		x.Equal("Is this your homework, Larry?", v.Get("status").Get("message").String())
 	}))
 	t.Run("unary with metadata", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		req := echo.Echo{}
+		req := echo.EchoRequest{}
 
-		v, js_err := jsInvoke(x, conn, echo.EchoService_Unary_FullMethodName, &req, map[string]any{
+		v, js_err := jsInvoke(x, conn, echo.EchoService_Once_FullMethodName, &req, map[string]any{
 			"meta": js.ValueOf(map[string]any{
 				"foo": []any{"bar"},
 			}),
@@ -97,13 +95,13 @@ func TestConn(t *testing.T) {
 		x.Equal("trailer", v.Get("trailer").Get("timing").Index(0).String())
 	}))
 	t.Run("unary with error and metadata", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		req := echo.Echo{}
+		req := echo.EchoRequest{}
 		req.SetStatus(echo.Status_builder{
 			Code:    int32(codes.FailedPrecondition),
 			Message: "Is this your homework, Larry?",
 		}.Build())
 
-		v, js_err := jsInvoke(x, conn, echo.EchoService_Unary_FullMethodName, &req, map[string]any{
+		v, js_err := jsInvoke(x, conn, echo.EchoService_Once_FullMethodName, &req, map[string]any{
 			"meta": js.ValueOf(map[string]any{
 				"foo": []any{"bar"},
 			}),

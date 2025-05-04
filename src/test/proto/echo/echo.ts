@@ -13,11 +13,11 @@ import { reflectionMergePartial } from "@protobuf-ts/runtime";
 import { MessageType } from "@protobuf-ts/runtime";
 import { Timestamp } from "../google/protobuf/timestamp";
 /**
- * @generated from protobuf message echo.Echo
+ * @generated from protobuf message echo.EchoRequest
  */
-export interface Echo {
+export interface EchoRequest {
     /**
-     * Server should response with this status.
+     * Server should respond with this status.
      *
      * @generated from protobuf field: echo.Status status = 1;
      */
@@ -27,21 +27,50 @@ export interface Echo {
      */
     message: string;
     /**
-     * @generated from protobuf field: uint64 sequence = 3;
-     */
-    sequence: bigint;
-    /**
      * Perform a circular shift on themessage
      * to the right by the given number.
      * If the number is negative, shift to the left.
      *
-     * @generated from protobuf field: int64 circular_shift = 4;
+     * @generated from protobuf field: optional int32 circular_shift = 4;
      */
-    circularShift: bigint;
+    circularShift?: number;
+    /**
+     * Server should respond with this number of EchoResponse.
+     * This effect only with stream method.
+     *
+     * @generated from protobuf field: optional uint32 repeat = 5;
+     */
+    repeat?: number;
     /**
      * @generated from protobuf field: google.protobuf.Timestamp date_created = 15;
      */
     dateCreated?: Timestamp;
+}
+/**
+ * @generated from protobuf message echo.EchoResponse
+ */
+export interface EchoResponse {
+    /**
+     * @generated from protobuf field: string message = 2;
+     */
+    message: string;
+    /**
+     * @generated from protobuf field: uint32 sequence = 3;
+     */
+    sequence: number;
+    /**
+     * @generated from protobuf field: google.protobuf.Timestamp date_created = 15;
+     */
+    dateCreated?: Timestamp;
+}
+/**
+ * @generated from protobuf message echo.EchoBatchResponse
+ */
+export interface EchoBatchResponse {
+    /**
+     * @generated from protobuf field: repeated echo.EchoResponse items = 1;
+     */
+    items: EchoResponse[];
 }
 /**
  * @generated from protobuf message echo.Status
@@ -57,26 +86,24 @@ export interface Status {
     message: string;
 }
 // @generated message type with reflection information, may provide speed optimized methods
-class Echo$Type extends MessageType<Echo> {
+class EchoRequest$Type extends MessageType<EchoRequest> {
     constructor() {
-        super("echo.Echo", [
+        super("echo.EchoRequest", [
             { no: 1, name: "status", kind: "message", T: () => Status },
             { no: 2, name: "message", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "sequence", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 4, name: "circular_shift", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 4, name: "circular_shift", kind: "scalar", opt: true, T: 5 /*ScalarType.INT32*/ },
+            { no: 5, name: "repeat", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
             { no: 15, name: "date_created", kind: "message", T: () => Timestamp }
         ]);
     }
-    create(value?: PartialMessage<Echo>): Echo {
+    create(value?: PartialMessage<EchoRequest>): EchoRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.message = "";
-        message.sequence = 0n;
-        message.circularShift = 0n;
         if (value !== undefined)
-            reflectionMergePartial<Echo>(this, message, value);
+            reflectionMergePartial<EchoRequest>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: Echo): Echo {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: EchoRequest): EchoRequest {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -87,11 +114,11 @@ class Echo$Type extends MessageType<Echo> {
                 case /* string message */ 2:
                     message.message = reader.string();
                     break;
-                case /* uint64 sequence */ 3:
-                    message.sequence = reader.uint64().toBigInt();
+                case /* optional int32 circular_shift */ 4:
+                    message.circularShift = reader.int32();
                     break;
-                case /* int64 circular_shift */ 4:
-                    message.circularShift = reader.int64().toBigInt();
+                case /* optional uint32 repeat */ 5:
+                    message.repeat = reader.uint32();
                     break;
                 case /* google.protobuf.Timestamp date_created */ 15:
                     message.dateCreated = Timestamp.internalBinaryRead(reader, reader.uint32(), options, message.dateCreated);
@@ -107,19 +134,19 @@ class Echo$Type extends MessageType<Echo> {
         }
         return message;
     }
-    internalBinaryWrite(message: Echo, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: EchoRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* echo.Status status = 1; */
         if (message.status)
             Status.internalBinaryWrite(message.status, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
         /* string message = 2; */
         if (message.message !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.message);
-        /* uint64 sequence = 3; */
-        if (message.sequence !== 0n)
-            writer.tag(3, WireType.Varint).uint64(message.sequence);
-        /* int64 circular_shift = 4; */
-        if (message.circularShift !== 0n)
-            writer.tag(4, WireType.Varint).int64(message.circularShift);
+        /* optional int32 circular_shift = 4; */
+        if (message.circularShift !== undefined)
+            writer.tag(4, WireType.Varint).int32(message.circularShift);
+        /* optional uint32 repeat = 5; */
+        if (message.repeat !== undefined)
+            writer.tag(5, WireType.Varint).uint32(message.repeat);
         /* google.protobuf.Timestamp date_created = 15; */
         if (message.dateCreated)
             Timestamp.internalBinaryWrite(message.dateCreated, writer.tag(15, WireType.LengthDelimited).fork(), options).join();
@@ -130,9 +157,118 @@ class Echo$Type extends MessageType<Echo> {
     }
 }
 /**
- * @generated MessageType for protobuf message echo.Echo
+ * @generated MessageType for protobuf message echo.EchoRequest
  */
-export const Echo = new Echo$Type();
+export const EchoRequest = new EchoRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class EchoResponse$Type extends MessageType<EchoResponse> {
+    constructor() {
+        super("echo.EchoResponse", [
+            { no: 2, name: "message", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "sequence", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 15, name: "date_created", kind: "message", T: () => Timestamp }
+        ]);
+    }
+    create(value?: PartialMessage<EchoResponse>): EchoResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.message = "";
+        message.sequence = 0;
+        if (value !== undefined)
+            reflectionMergePartial<EchoResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: EchoResponse): EchoResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string message */ 2:
+                    message.message = reader.string();
+                    break;
+                case /* uint32 sequence */ 3:
+                    message.sequence = reader.uint32();
+                    break;
+                case /* google.protobuf.Timestamp date_created */ 15:
+                    message.dateCreated = Timestamp.internalBinaryRead(reader, reader.uint32(), options, message.dateCreated);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: EchoResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string message = 2; */
+        if (message.message !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.message);
+        /* uint32 sequence = 3; */
+        if (message.sequence !== 0)
+            writer.tag(3, WireType.Varint).uint32(message.sequence);
+        /* google.protobuf.Timestamp date_created = 15; */
+        if (message.dateCreated)
+            Timestamp.internalBinaryWrite(message.dateCreated, writer.tag(15, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message echo.EchoResponse
+ */
+export const EchoResponse = new EchoResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class EchoBatchResponse$Type extends MessageType<EchoBatchResponse> {
+    constructor() {
+        super("echo.EchoBatchResponse", [
+            { no: 1, name: "items", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => EchoResponse }
+        ]);
+    }
+    create(value?: PartialMessage<EchoBatchResponse>): EchoBatchResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.items = [];
+        if (value !== undefined)
+            reflectionMergePartial<EchoBatchResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: EchoBatchResponse): EchoBatchResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* repeated echo.EchoResponse items */ 1:
+                    message.items.push(EchoResponse.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: EchoBatchResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* repeated echo.EchoResponse items = 1; */
+        for (let i = 0; i < message.items.length; i++)
+            EchoResponse.internalBinaryWrite(message.items[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message echo.EchoBatchResponse
+ */
+export const EchoBatchResponse = new EchoBatchResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class Status$Type extends MessageType<Status> {
     constructor() {
@@ -192,8 +328,8 @@ export const Status = new Status$Type();
  * @generated ServiceType for protobuf service echo.EchoService
  */
 export const EchoService = new ServiceType("echo.EchoService", [
-    { name: "Unary", options: {}, I: Echo, O: Echo },
-    { name: "ClientStream", clientStreaming: true, options: {}, I: Echo, O: Echo },
-    { name: "ServerStream", serverStreaming: true, options: {}, I: Echo, O: Echo },
-    { name: "BidiStream", serverStreaming: true, clientStreaming: true, options: {}, I: Echo, O: Echo }
+    { name: "Once", options: {}, I: EchoRequest, O: EchoResponse },
+    { name: "Many", serverStreaming: true, options: {}, I: EchoRequest, O: EchoResponse },
+    { name: "Buff", clientStreaming: true, options: {}, I: EchoRequest, O: EchoResponse },
+    { name: "Live", serverStreaming: true, clientStreaming: true, options: {}, I: EchoRequest, O: EchoResponse }
 ]);

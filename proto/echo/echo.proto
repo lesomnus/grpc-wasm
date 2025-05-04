@@ -8,25 +8,38 @@ option go_package = "github.com/lesomnus/grpc-wasm/internal/echo";
 
 
 service EchoService {
-	rpc Unary(Echo) returns (Echo) {};
-	rpc ClientStream(stream Echo) returns (Echo) {};
-	rpc ServerStream(Echo) returns (stream Echo) {};
-	rpc BidiStream(stream Echo) returns (stream Echo) {};
+	rpc Once(EchoRequest) returns (EchoResponse) {};
+	rpc Many(EchoRequest) returns (stream EchoResponse) {};
+	rpc Buff(stream EchoRequest) returns (EchoResponse) {};
+	rpc Live(stream EchoRequest) returns (stream EchoResponse) {};
 }
 
-message Echo {
-	// Server should response with this status.
+message EchoRequest {
+	// Server should respond with this status.
 	Status status = 1;
-
 	string message = 2;
-	uint64 sequence = 3;
 	
 	// Perform a circular shift on themessage
 	// to the right by the given number.
 	// If the number is negative, shift to the left.
-	int64 circular_shift = 4;
+	optional int32 circular_shift = 4;
+
+	// Server should respond with this number of EchoResponse.
+	// This effect only with stream method.
+	optional uint32 repeat = 5;
 
 	google.protobuf.Timestamp date_created = 15;
+}
+
+message EchoResponse {
+	string message = 2;
+	uint32 sequence = 3;
+
+	google.protobuf.Timestamp date_created = 15;
+}
+
+message EchoBatchResponse {
+	repeated EchoResponse items = 1;
 }
 
 message Status {

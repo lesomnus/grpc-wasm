@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { type CallOption, type Conn, open } from "./index";
 
-import { Echo } from "./test/proto/echo/echo";
+import { EchoRequest, EchoResponse } from "./test/proto/echo/echo";
 import { Timestamp } from "./test/proto/google/protobuf/timestamp";
 
 describe("conn", () => {
@@ -20,53 +20,53 @@ describe("conn", () => {
 		};
 	});
 
-	const empty_echo: Echo = { message: "", sequence: 0n, circularShift: 0n };
-	const invoke = async <T extends {}>(
+	const invoke = async <I extends {}, O extends {}>(
 		method: string,
-		t: MessageType<T>,
-		m: T,
+		i: MessageType<I>,
+		o: MessageType<O>,
+		m: I,
 		option: CallOption,
 	) => {
-		const req = t.toBinary(m);
+		const req = i.toBinary(m);
 		const rst = await conn.invoke(`/echo.EchoService/${method}`, req, option);
-		const response = t.fromBinary(rst.response);
+		const response = o.fromBinary(rst.response);
 		return {
 			...rst,
 			response,
 		};
 	};
+	const invokeOnce = (m: EchoRequest, option: CallOption) =>
+		invoke("Once", EchoRequest, EchoResponse, m, option);
 
 	test("unary", async () => {
-		const msg: Echo = {
+		const req: EchoRequest = {
 			message: "Lebowski",
-			sequence: 42n,
-			circularShift: 3n,
+			circularShift: 3,
 			dateCreated: Timestamp.now(),
 		};
-		const { response: res, status } = await invoke("Unary", Echo, msg, {});
+		const { response: res, status } = await invokeOnce(req, {});
 		expect(status.code).toEqual(0);
 		expect(res.message).toEqual("skiLebow");
-		expect(res.sequence).toEqual(msg.sequence);
 		expect(res.dateCreated).not.toBeUndefined();
 		expect(Timestamp.toDate(res.dateCreated!).getTime()).toBeGreaterThan(
-			Timestamp.toDate(msg.dateCreated!).getTime(),
+			Timestamp.toDate(req.dateCreated!).getTime(),
 		);
 	});
 	test("unary with error", async () => {
-		const msg: Echo = {
-			...empty_echo,
+		const req: EchoRequest = {
+			message: "",
 			status: {
 				code: GrpcStatusCode.FAILED_PRECONDITION,
 				message: "Is this your homework, Larry?",
 			},
 		};
-		const { status } = await invoke("Unary", Echo, msg, {});
-		expect(status).toEqual(msg.status);
+		const { status } = await invokeOnce(req, {});
+		expect(status).toEqual(req.status);
 	});
 	test("unary with metadata", async () => {
 		const meta = { foo: ["bar"] };
-		const msg = empty_echo;
-		const { header, trailer } = await invoke("Unary", Echo, msg, { meta });
+		const req: EchoRequest = { message: "" };
+		const { header, trailer } = await invokeOnce(req, { meta });
 		expect(header).toMatchObject({
 			// "content-type": ["application/grpc+noop"],
 			foo: ["bar"],
@@ -79,17 +79,15 @@ describe("conn", () => {
 	});
 	test("unary with error and metadata", async () => {
 		const meta = { foo: ["bar"] };
-		const msg: Echo = {
-			...empty_echo,
+		const req: EchoRequest = {
+			message: "",
 			status: {
 				code: GrpcStatusCode.FAILED_PRECONDITION,
 				message: "Is this your homework, Larry?",
 			},
 		};
-		const { header, trailer, status } = await invoke("Unary", Echo, msg, {
-			meta,
-		});
-		expect(status).toEqual(msg.status);
+		const { header, trailer, status } = await invokeOnce(req, { meta });
+		expect(status).toEqual(req.status);
 		expect(header).toMatchObject({
 			// "content-type": ["application/grpc+noop"],
 			foo: ["bar"],

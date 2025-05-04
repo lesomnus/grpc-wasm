@@ -21,31 +21,33 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Echo struct {
+type EchoRequest struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3"`
 	xxx_hidden_Message       string                 `protobuf:"bytes,2,opt,name=message,proto3"`
-	xxx_hidden_Sequence      uint64                 `protobuf:"varint,3,opt,name=sequence,proto3"`
-	xxx_hidden_CircularShift int64                  `protobuf:"varint,4,opt,name=circular_shift,json=circularShift,proto3"`
+	xxx_hidden_CircularShift int32                  `protobuf:"varint,4,opt,name=circular_shift,json=circularShift,proto3,oneof"`
+	xxx_hidden_Repeat        uint32                 `protobuf:"varint,5,opt,name=repeat,proto3,oneof"`
 	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated,proto3"`
+	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
+	XXX_presence             [1]uint32
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
 
-func (x *Echo) Reset() {
-	*x = Echo{}
+func (x *EchoRequest) Reset() {
+	*x = EchoRequest{}
 	mi := &file_echo_echo_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Echo) String() string {
+func (x *EchoRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Echo) ProtoMessage() {}
+func (*EchoRequest) ProtoMessage() {}
 
-func (x *Echo) ProtoReflect() protoreflect.Message {
+func (x *EchoRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_echo_echo_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -57,106 +59,295 @@ func (x *Echo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *Echo) GetStatus() *Status {
+func (x *EchoRequest) GetStatus() *Status {
 	if x != nil {
 		return x.xxx_hidden_Status
 	}
 	return nil
 }
 
-func (x *Echo) GetMessage() string {
+func (x *EchoRequest) GetMessage() string {
 	if x != nil {
 		return x.xxx_hidden_Message
 	}
 	return ""
 }
 
-func (x *Echo) GetSequence() uint64 {
-	if x != nil {
-		return x.xxx_hidden_Sequence
-	}
-	return 0
-}
-
-func (x *Echo) GetCircularShift() int64 {
+func (x *EchoRequest) GetCircularShift() int32 {
 	if x != nil {
 		return x.xxx_hidden_CircularShift
 	}
 	return 0
 }
 
-func (x *Echo) GetDateCreated() *timestamppb.Timestamp {
+func (x *EchoRequest) GetRepeat() uint32 {
+	if x != nil {
+		return x.xxx_hidden_Repeat
+	}
+	return 0
+}
+
+func (x *EchoRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
 	}
 	return nil
 }
 
-func (x *Echo) SetStatus(v *Status) {
+func (x *EchoRequest) SetStatus(v *Status) {
 	x.xxx_hidden_Status = v
 }
 
-func (x *Echo) SetMessage(v string) {
+func (x *EchoRequest) SetMessage(v string) {
 	x.xxx_hidden_Message = v
 }
 
-func (x *Echo) SetSequence(v uint64) {
-	x.xxx_hidden_Sequence = v
-}
-
-func (x *Echo) SetCircularShift(v int64) {
+func (x *EchoRequest) SetCircularShift(v int32) {
 	x.xxx_hidden_CircularShift = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
 }
 
-func (x *Echo) SetDateCreated(v *timestamppb.Timestamp) {
+func (x *EchoRequest) SetRepeat(v uint32) {
+	x.xxx_hidden_Repeat = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+}
+
+func (x *EchoRequest) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
 
-func (x *Echo) HasStatus() bool {
+func (x *EchoRequest) HasStatus() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Status != nil
 }
 
-func (x *Echo) HasDateCreated() bool {
+func (x *EchoRequest) HasCircularShift() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *EchoRequest) HasRepeat() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *EchoRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateCreated != nil
 }
 
-func (x *Echo) ClearStatus() {
+func (x *EchoRequest) ClearStatus() {
 	x.xxx_hidden_Status = nil
 }
 
-func (x *Echo) ClearDateCreated() {
+func (x *EchoRequest) ClearCircularShift() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_CircularShift = 0
+}
+
+func (x *EchoRequest) ClearRepeat() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Repeat = 0
+}
+
+func (x *EchoRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
 
-type Echo_builder struct {
+type EchoRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Server should response with this status.
-	Status   *Status
-	Message  string
-	Sequence uint64
+	// Server should respond with this status.
+	Status  *Status
+	Message string
 	// Perform a circular shift on themessage
 	// to the right by the given number.
 	// If the number is negative, shift to the left.
-	CircularShift int64
-	DateCreated   *timestamppb.Timestamp
+	CircularShift *int32
+	// Server should respond with this number of EchoResponse.
+	// This effect only with stream method.
+	Repeat      *uint32
+	DateCreated *timestamppb.Timestamp
 }
 
-func (b0 Echo_builder) Build() *Echo {
-	m0 := &Echo{}
+func (b0 EchoRequest_builder) Build() *EchoRequest {
+	m0 := &EchoRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Message = b.Message
-	x.xxx_hidden_Sequence = b.Sequence
-	x.xxx_hidden_CircularShift = b.CircularShift
+	if b.CircularShift != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
+		x.xxx_hidden_CircularShift = *b.CircularShift
+	}
+	if b.Repeat != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
+		x.xxx_hidden_Repeat = *b.Repeat
+	}
 	x.xxx_hidden_DateCreated = b.DateCreated
+	return m0
+}
+
+type EchoResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Message     string                 `protobuf:"bytes,2,opt,name=message,proto3"`
+	xxx_hidden_Sequence    uint32                 `protobuf:"varint,3,opt,name=sequence,proto3"`
+	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated,proto3"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *EchoResponse) Reset() {
+	*x = EchoResponse{}
+	mi := &file_echo_echo_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EchoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EchoResponse) ProtoMessage() {}
+
+func (x *EchoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_echo_echo_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *EchoResponse) GetMessage() string {
+	if x != nil {
+		return x.xxx_hidden_Message
+	}
+	return ""
+}
+
+func (x *EchoResponse) GetSequence() uint32 {
+	if x != nil {
+		return x.xxx_hidden_Sequence
+	}
+	return 0
+}
+
+func (x *EchoResponse) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *EchoResponse) SetMessage(v string) {
+	x.xxx_hidden_Message = v
+}
+
+func (x *EchoResponse) SetSequence(v uint32) {
+	x.xxx_hidden_Sequence = v
+}
+
+func (x *EchoResponse) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *EchoResponse) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *EchoResponse) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+type EchoResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Message     string
+	Sequence    uint32
+	DateCreated *timestamppb.Timestamp
+}
+
+func (b0 EchoResponse_builder) Build() *EchoResponse {
+	m0 := &EchoResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Message = b.Message
+	x.xxx_hidden_Sequence = b.Sequence
+	x.xxx_hidden_DateCreated = b.DateCreated
+	return m0
+}
+
+type EchoBatchResponse struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Items *[]*EchoResponse       `protobuf:"bytes,1,rep,name=items,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *EchoBatchResponse) Reset() {
+	*x = EchoBatchResponse{}
+	mi := &file_echo_echo_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EchoBatchResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EchoBatchResponse) ProtoMessage() {}
+
+func (x *EchoBatchResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_echo_echo_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *EchoBatchResponse) GetItems() []*EchoResponse {
+	if x != nil {
+		if x.xxx_hidden_Items != nil {
+			return *x.xxx_hidden_Items
+		}
+	}
+	return nil
+}
+
+func (x *EchoBatchResponse) SetItems(v []*EchoResponse) {
+	x.xxx_hidden_Items = &v
+}
+
+type EchoBatchResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Items []*EchoResponse
+}
+
+func (b0 EchoBatchResponse_builder) Build() *EchoBatchResponse {
+	m0 := &EchoBatchResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Items = &b.Items
 	return m0
 }
 
@@ -170,7 +361,7 @@ type Status struct {
 
 func (x *Status) Reset() {
 	*x = Status{}
-	mi := &file_echo_echo_proto_msgTypes[1]
+	mi := &file_echo_echo_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -182,7 +373,7 @@ func (x *Status) String() string {
 func (*Status) ProtoMessage() {}
 
 func (x *Status) ProtoReflect() protoreflect.Message {
-	mi := &file_echo_echo_proto_msgTypes[1]
+	mi := &file_echo_echo_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -235,53 +426,56 @@ var File_echo_echo_proto protoreflect.FileDescriptor
 
 const file_echo_echo_proto_rawDesc = "" +
 	"\n" +
-	"\x0fecho/echo.proto\x12\x04echo\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc8\x01\n" +
-	"\x04Echo\x12$\n" +
+	"\x0fecho/echo.proto\x12\x04echo\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf3\x01\n" +
+	"\vEchoRequest\x12$\n" +
 	"\x06status\x18\x01 \x01(\v2\f.echo.StatusR\x06status\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12*\n" +
+	"\x0ecircular_shift\x18\x04 \x01(\x05H\x00R\rcircularShift\x88\x01\x01\x12\x1b\n" +
+	"\x06repeat\x18\x05 \x01(\rH\x01R\x06repeat\x88\x01\x01\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreatedB\x11\n" +
+	"\x0f_circular_shiftB\t\n" +
+	"\a_repeat\"\x83\x01\n" +
+	"\fEchoResponse\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1a\n" +
-	"\bsequence\x18\x03 \x01(\x04R\bsequence\x12%\n" +
-	"\x0ecircular_shift\x18\x04 \x01(\x03R\rcircularShift\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"6\n" +
+	"\bsequence\x18\x03 \x01(\rR\bsequence\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"=\n" +
+	"\x11EchoBatchResponse\x12(\n" +
+	"\x05items\x18\x01 \x03(\v2\x12.echo.EchoResponseR\x05items\"6\n" +
 	"\x06Status\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage2\xb4\x01\n" +
-	"\vEchoService\x12!\n" +
-	"\x05Unary\x12\n" +
-	".echo.Echo\x1a\n" +
-	".echo.Echo\"\x00\x12*\n" +
-	"\fClientStream\x12\n" +
-	".echo.Echo\x1a\n" +
-	".echo.Echo\"\x00(\x01\x12*\n" +
-	"\fServerStream\x12\n" +
-	".echo.Echo\x1a\n" +
-	".echo.Echo\"\x000\x01\x12*\n" +
-	"\n" +
-	"BidiStream\x12\n" +
-	".echo.Echo\x1a\n" +
-	".echo.Echo\"\x00(\x010\x01B-Z+github.com/lesomnus/grpc-wasm/internal/echob\x06proto3"
+	"\amessage\x18\x02 \x01(\tR\amessage2\xd9\x01\n" +
+	"\vEchoService\x12/\n" +
+	"\x04Once\x12\x11.echo.EchoRequest\x1a\x12.echo.EchoResponse\"\x00\x121\n" +
+	"\x04Many\x12\x11.echo.EchoRequest\x1a\x12.echo.EchoResponse\"\x000\x01\x121\n" +
+	"\x04Buff\x12\x11.echo.EchoRequest\x1a\x12.echo.EchoResponse\"\x00(\x01\x123\n" +
+	"\x04Live\x12\x11.echo.EchoRequest\x1a\x12.echo.EchoResponse\"\x00(\x010\x01B-Z+github.com/lesomnus/grpc-wasm/internal/echob\x06proto3"
 
-var file_echo_echo_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_echo_echo_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_echo_echo_proto_goTypes = []any{
-	(*Echo)(nil),                  // 0: echo.Echo
-	(*Status)(nil),                // 1: echo.Status
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(*EchoRequest)(nil),           // 0: echo.EchoRequest
+	(*EchoResponse)(nil),          // 1: echo.EchoResponse
+	(*EchoBatchResponse)(nil),     // 2: echo.EchoBatchResponse
+	(*Status)(nil),                // 3: echo.Status
+	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
 var file_echo_echo_proto_depIdxs = []int32{
-	1, // 0: echo.Echo.status:type_name -> echo.Status
-	2, // 1: echo.Echo.date_created:type_name -> google.protobuf.Timestamp
-	0, // 2: echo.EchoService.Unary:input_type -> echo.Echo
-	0, // 3: echo.EchoService.ClientStream:input_type -> echo.Echo
-	0, // 4: echo.EchoService.ServerStream:input_type -> echo.Echo
-	0, // 5: echo.EchoService.BidiStream:input_type -> echo.Echo
-	0, // 6: echo.EchoService.Unary:output_type -> echo.Echo
-	0, // 7: echo.EchoService.ClientStream:output_type -> echo.Echo
-	0, // 8: echo.EchoService.ServerStream:output_type -> echo.Echo
-	0, // 9: echo.EchoService.BidiStream:output_type -> echo.Echo
-	6, // [6:10] is the sub-list for method output_type
-	2, // [2:6] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 0: echo.EchoRequest.status:type_name -> echo.Status
+	4, // 1: echo.EchoRequest.date_created:type_name -> google.protobuf.Timestamp
+	4, // 2: echo.EchoResponse.date_created:type_name -> google.protobuf.Timestamp
+	1, // 3: echo.EchoBatchResponse.items:type_name -> echo.EchoResponse
+	0, // 4: echo.EchoService.Once:input_type -> echo.EchoRequest
+	0, // 5: echo.EchoService.Many:input_type -> echo.EchoRequest
+	0, // 6: echo.EchoService.Buff:input_type -> echo.EchoRequest
+	0, // 7: echo.EchoService.Live:input_type -> echo.EchoRequest
+	1, // 8: echo.EchoService.Once:output_type -> echo.EchoResponse
+	1, // 9: echo.EchoService.Many:output_type -> echo.EchoResponse
+	1, // 10: echo.EchoService.Buff:output_type -> echo.EchoResponse
+	1, // 11: echo.EchoService.Live:output_type -> echo.EchoResponse
+	8, // [8:12] is the sub-list for method output_type
+	4, // [4:8] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_echo_echo_proto_init() }
@@ -289,13 +483,14 @@ func file_echo_echo_proto_init() {
 	if File_echo_echo_proto != nil {
 		return
 	}
+	file_echo_echo_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_echo_echo_proto_rawDesc), len(file_echo_echo_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

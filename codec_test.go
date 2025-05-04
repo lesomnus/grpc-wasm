@@ -12,7 +12,7 @@ func TestNoopCodec(t *testing.T) {
 	codec := grpcwasm.NoopCodec{}
 
 	t.Run("marshal only byte slice", func(t *testing.T) {
-		msg := &echo.Echo{}
+		msg := &echo.EchoRequest{}
 		_, err := codec.Marshal(msg)
 		require.ErrorContains(t, err, "[]byte")
 	})
@@ -23,7 +23,7 @@ func TestNoopCodec(t *testing.T) {
 		require.Equal(t, msg, data)
 	})
 	t.Run("unmarshal into only pointer to byte slice", func(t *testing.T) {
-		msg := &echo.Echo{}
+		msg := &echo.EchoRequest{}
 		err := codec.Unmarshal([]byte("foo"), msg)
 		require.ErrorContains(t, err, "*[]byte")
 	})
