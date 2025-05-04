@@ -3,96 +3,70 @@
 // tslint:disable
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
+import { EchoService } from "./echo";
 import type { DuplexStreamingCall } from "@protobuf-ts/runtime-rpc";
 import type { ServerStreamingCall } from "@protobuf-ts/runtime-rpc";
 import type { ClientStreamingCall } from "@protobuf-ts/runtime-rpc";
 import { stackIntercept } from "@protobuf-ts/runtime-rpc";
+import type { Echo } from "./echo";
 import type { UnaryCall } from "@protobuf-ts/runtime-rpc";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
-import { EchoService } from "./echo";
-import type { Echo } from "./echo";
 /**
  * @generated from protobuf service echo.EchoService
  */
 export interface IEchoServiceClient {
-	/**
-	 * @generated from protobuf rpc: Unary(echo.Echo) returns (echo.Echo);
-	 */
-	unary(input: Echo, options?: RpcOptions): UnaryCall<Echo, Echo>;
-	/**
-	 * @generated from protobuf rpc: ClientStream(stream echo.Echo) returns (echo.Echo);
-	 */
-	clientStream(options?: RpcOptions): ClientStreamingCall<Echo, Echo>;
-	/**
-	 * @generated from protobuf rpc: ServerStream(echo.Echo) returns (stream echo.Echo);
-	 */
-	serverStream(
-		input: Echo,
-		options?: RpcOptions,
-	): ServerStreamingCall<Echo, Echo>;
-	/**
-	 * @generated from protobuf rpc: BidiStream(stream echo.Echo) returns (stream echo.Echo);
-	 */
-	bidiStream(options?: RpcOptions): DuplexStreamingCall<Echo, Echo>;
+    /**
+     * @generated from protobuf rpc: Unary(echo.Echo) returns (echo.Echo);
+     */
+    unary(input: Echo, options?: RpcOptions): UnaryCall<Echo, Echo>;
+    /**
+     * @generated from protobuf rpc: ClientStream(stream echo.Echo) returns (echo.Echo);
+     */
+    clientStream(options?: RpcOptions): ClientStreamingCall<Echo, Echo>;
+    /**
+     * @generated from protobuf rpc: ServerStream(echo.Echo) returns (stream echo.Echo);
+     */
+    serverStream(input: Echo, options?: RpcOptions): ServerStreamingCall<Echo, Echo>;
+    /**
+     * @generated from protobuf rpc: BidiStream(stream echo.Echo) returns (stream echo.Echo);
+     */
+    bidiStream(options?: RpcOptions): DuplexStreamingCall<Echo, Echo>;
 }
 /**
  * @generated from protobuf service echo.EchoService
  */
 export class EchoServiceClient implements IEchoServiceClient, ServiceInfo {
-	typeName = EchoService.typeName;
-	methods = EchoService.methods;
-	options = EchoService.options;
-	constructor(private readonly _transport: RpcTransport) {}
-	/**
-	 * @generated from protobuf rpc: Unary(echo.Echo) returns (echo.Echo);
-	 */
-	unary(input: Echo, options?: RpcOptions): UnaryCall<Echo, Echo> {
-		const method = this.methods[0],
-			opt = this._transport.mergeOptions(options);
-		return stackIntercept<Echo, Echo>(
-			"unary",
-			this._transport,
-			method,
-			opt,
-			input,
-		);
-	}
-	/**
-	 * @generated from protobuf rpc: ClientStream(stream echo.Echo) returns (echo.Echo);
-	 */
-	clientStream(options?: RpcOptions): ClientStreamingCall<Echo, Echo> {
-		const method = this.methods[1],
-			opt = this._transport.mergeOptions(options);
-		return stackIntercept<Echo, Echo>(
-			"clientStreaming",
-			this._transport,
-			method,
-			opt,
-		);
-	}
-	/**
-	 * @generated from protobuf rpc: ServerStream(echo.Echo) returns (stream echo.Echo);
-	 */
-	serverStream(
-		input: Echo,
-		options?: RpcOptions,
-	): ServerStreamingCall<Echo, Echo> {
-		const method = this.methods[2],
-			opt = this._transport.mergeOptions(options);
-		return stackIntercept<Echo, Echo>(
-			"serverStreaming",
-			this._transport,
-			method,
-			opt,
-			input,
-		);
-	}
-	/**
-	 * @generated from protobuf rpc: BidiStream(stream echo.Echo) returns (stream echo.Echo);
-	 */
-	bidiStream(options?: RpcOptions): DuplexStreamingCall<Echo, Echo> {
-		const method = this.methods[3],
-			opt = this._transport.mergeOptions(options);
-		return stackIntercept<Echo, Echo>("duplex", this._transport, method, opt);
-	}
+    typeName = EchoService.typeName;
+    methods = EchoService.methods;
+    options = EchoService.options;
+    constructor(private readonly _transport: RpcTransport) {
+    }
+    /**
+     * @generated from protobuf rpc: Unary(echo.Echo) returns (echo.Echo);
+     */
+    unary(input: Echo, options?: RpcOptions): UnaryCall<Echo, Echo> {
+        const method = this.methods[0], opt = this._transport.mergeOptions(options);
+        return stackIntercept<Echo, Echo>("unary", this._transport, method, opt, input);
+    }
+    /**
+     * @generated from protobuf rpc: ClientStream(stream echo.Echo) returns (echo.Echo);
+     */
+    clientStream(options?: RpcOptions): ClientStreamingCall<Echo, Echo> {
+        const method = this.methods[1], opt = this._transport.mergeOptions(options);
+        return stackIntercept<Echo, Echo>("clientStreaming", this._transport, method, opt);
+    }
+    /**
+     * @generated from protobuf rpc: ServerStream(echo.Echo) returns (stream echo.Echo);
+     */
+    serverStream(input: Echo, options?: RpcOptions): ServerStreamingCall<Echo, Echo> {
+        const method = this.methods[2], opt = this._transport.mergeOptions(options);
+        return stackIntercept<Echo, Echo>("serverStreaming", this._transport, method, opt, input);
+    }
+    /**
+     * @generated from protobuf rpc: BidiStream(stream echo.Echo) returns (stream echo.Echo);
+     */
+    bidiStream(options?: RpcOptions): DuplexStreamingCall<Echo, Echo> {
+        const method = this.methods[3], opt = this._transport.mergeOptions(options);
+        return stackIntercept<Echo, Echo>("duplex", this._transport, method, opt);
+    }
 }

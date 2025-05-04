@@ -1,4 +1,6 @@
-export type RpcError = {
+// Keep compatibility with proto message google.rpc.Status.
+// See: https://github.com/grpc/grpc/blob/5201f9c38ac135cc0112a99bf737689c429bd476/src/proto/grpc/status/status.proto
+export type RpcStatus = {
 	code: number;
 	message: string;
 };
@@ -7,6 +9,7 @@ export type RpcResult = {
 	header: Metadata;
 	trailer: Metadata;
 	response: Uint8Array;
+	status: RpcStatus;
 };
 
 export type Metadata = {

@@ -29,16 +29,12 @@ interface Socket {
 	dial(): Promise<Conn>;
 }
 
-type ConnCallOption = {
-	meta?: string;
-};
-
 type Conn = {
 	close(): Promise<void>;
 	invoke(
 		method: string,
 		req: Uint8Array,
-		option: ConnCallOption,
+		option: CallOption,
 	): Promise<RpcResult>;
 };
 
@@ -196,10 +192,6 @@ expose({
 		option: CallOption,
 	): Promise<RpcResult> {
 		const conn = conns.must(id);
-		const opt: ConnCallOption = {};
-		if (option.meta) {
-			opt.meta = JSON.stringify(opt.meta);
-		}
-		return conn.invoke(method, req, opt);
+		return await conn.invoke(method, req, option);
 	},
 } as BridgeWorker);

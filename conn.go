@@ -4,12 +4,12 @@ package grpcwasm
 
 import (
 	"context"
-	"encoding/json"
 	"syscall/js"
 
 	"github.com/lesomnus/grpc-wasm/internal/jz"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type Conn struct {
@@ -30,17 +30,25 @@ func (c *Conn) JsClose(this js.Value, args []js.Value) any {
 	})
 }
 
+// JsInvoke send serialized data to the server with given method.
+// It is resolved even if server responded with status.Code > 0 and "response" will be empty.
+//
 // Signature:
 //
 //	type Metadata = {
 //		[key: string]: string[] | undefined
 //	};
-//	type type RpcResult = {
-//		header: JSON<Metadata>
-//		trailer: JSON<Metadata>
+//	type RpcStatus = {
+//		code: number
+//		message: string
+//	}
+//	type RpcResult {
+//		header: Metadata
+//		trailer: Metadata
 //		response: Uint8Array
+//		status: RpcStatus
 //	};
-//	function(method: string, req: Uint8Array, option: {meta?: JSON<Metadata>}): Promise<RpcResult>;
+//	function(method: string, req: Uint8Array, option: {meta?: Metadata}): Promise<RpcResult>;
 func (c *Conn) JsInvoke(this js.Value, args []js.Value) any {
 	return c.scope.Promise(func() (js.Value, js.Value) {
 		if len(args) != 3 {
@@ -56,10 +64,8 @@ func (c *Conn) JsInvoke(this js.Value, args []js.Value) any {
 		js.CopyBytesToGo(data, req)
 
 		meta := metadata.MD{}
-		if v := opt.Get("meta"); v.Type() == js.TypeString {
-			if err := json.Unmarshal([]byte(v.String()), &meta); err != nil {
-				return js.Undefined(), jz.ErrorF("unmarshal option.meta: %v", err)
-			}
+		if v := opt.Get("meta"); v.Type() == js.TypeObject {
+			metaFromJsValue(meta, v)
 		}
 
 		ctx := c.ctx
@@ -74,35 +80,31 @@ func (c *Conn) JsInvoke(this js.Value, args []js.Value) any {
 			grpc.Trailer(&trailer),
 		}
 
-		var out []byte
+		var (
+			out []byte
+			st  status.Status
+		)
 		if err := c.ClientConn.Invoke(ctx, method, data, &out, opts...); err != nil {
-			return js.Undefined(), jz.StatusE(err)
+			s, ok := status.FromError(err)
+			if !ok {
+				return js.Undefined(), jz.ToError(err)
+			}
+			if s != nil {
+				st = *s
+			}
 		}
 
 		js_out := js.Global().Get("Uint8Array").New(len(out))
 		js.CopyBytesToJS(js_out, out)
 
-		header_str := "{}"
-		trailer_str := "{}"
-		if len(header) > 0 {
-			b, err := json.Marshal(header)
-			if err != nil {
-				return js.Undefined(), jz.ErrorF("marshal header into JSON: %v", err)
-			}
-			header_str = string(b)
-		}
-		if len(trailer) > 0 {
-			b, err := json.Marshal(trailer)
-			if err != nil {
-				return js.Undefined(), jz.ErrorF("marshal trailer into JSON: %v", err)
-			}
-			trailer_str = string(b)
-		}
-
 		return js.ValueOf(map[string]any{
-			"header":   js.ValueOf(header_str),
-			"trailer":  js.ValueOf(trailer_str),
+			"header":   metaToJsValue(header),
+			"trailer":  metaToJsValue(trailer),
 			"response": js_out,
+			"status": js.ValueOf(map[string]any{
+				"code":    js.ValueOf(int(st.Code())),
+				"message": js.ValueOf(st.Message()),
+			}),
 		}), js.Undefined()
 	})
 }

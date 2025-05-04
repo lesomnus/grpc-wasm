@@ -48,13 +48,16 @@ import { open } from "grpc-wasm";
 const sock = await open('path/to/your/bridge.wasm')
 const conn = await sock.dial()
 
-const msg = { message: "Royale with Cheese"};
+const msg: Echo = {
+	message: "Royale with Cheese",
+	withCircularShift: 6n
+};
 const req = Echo.toBinary(msg)
 const rst = await conn.invoke("/echo.EchoService/Unary", req, {});
 const res = Echo.fromBinary(rst.response);
 
 console.log(res.message)
-// "Royale with Cheese"
+// "Cheese Royale with "
 
 await conn.close()
 await sock.close()

@@ -21,90 +21,20 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Error struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Code    uint32                 `protobuf:"varint,1,opt,name=code,proto3"`
-	xxx_hidden_Message string                 `protobuf:"bytes,2,opt,name=message,proto3"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
-}
-
-func (x *Error) Reset() {
-	*x = Error{}
-	mi := &file_echo_echo_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Error) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Error) ProtoMessage() {}
-
-func (x *Error) ProtoReflect() protoreflect.Message {
-	mi := &file_echo_echo_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *Error) GetCode() uint32 {
-	if x != nil {
-		return x.xxx_hidden_Code
-	}
-	return 0
-}
-
-func (x *Error) GetMessage() string {
-	if x != nil {
-		return x.xxx_hidden_Message
-	}
-	return ""
-}
-
-func (x *Error) SetCode(v uint32) {
-	x.xxx_hidden_Code = v
-}
-
-func (x *Error) SetMessage(v string) {
-	x.xxx_hidden_Message = v
-}
-
-type Error_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Code    uint32
-	Message string
-}
-
-func (b0 Error_builder) Build() *Error {
-	m0 := &Error{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Code = b.Code
-	x.xxx_hidden_Message = b.Message
-	return m0
-}
-
 type Echo struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Error       *Error                 `protobuf:"bytes,1,opt,name=error,proto3"`
-	xxx_hidden_Message     string                 `protobuf:"bytes,2,opt,name=message,proto3"`
-	xxx_hidden_Sequence    uint64                 `protobuf:"varint,3,opt,name=sequence,proto3"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated,proto3"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3"`
+	xxx_hidden_Message       string                 `protobuf:"bytes,2,opt,name=message,proto3"`
+	xxx_hidden_Sequence      uint64                 `protobuf:"varint,3,opt,name=sequence,proto3"`
+	xxx_hidden_CircularShift int64                  `protobuf:"varint,4,opt,name=circular_shift,json=circularShift,proto3"`
+	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated,proto3"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *Echo) Reset() {
 	*x = Echo{}
-	mi := &file_echo_echo_proto_msgTypes[1]
+	mi := &file_echo_echo_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -116,7 +46,7 @@ func (x *Echo) String() string {
 func (*Echo) ProtoMessage() {}
 
 func (x *Echo) ProtoReflect() protoreflect.Message {
-	mi := &file_echo_echo_proto_msgTypes[1]
+	mi := &file_echo_echo_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -127,9 +57,9 @@ func (x *Echo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *Echo) GetError() *Error {
+func (x *Echo) GetStatus() *Status {
 	if x != nil {
-		return x.xxx_hidden_Error
+		return x.xxx_hidden_Status
 	}
 	return nil
 }
@@ -148,6 +78,13 @@ func (x *Echo) GetSequence() uint64 {
 	return 0
 }
 
+func (x *Echo) GetCircularShift() int64 {
+	if x != nil {
+		return x.xxx_hidden_CircularShift
+	}
+	return 0
+}
+
 func (x *Echo) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -155,8 +92,8 @@ func (x *Echo) GetDateCreated() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *Echo) SetError(v *Error) {
-	x.xxx_hidden_Error = v
+func (x *Echo) SetStatus(v *Status) {
+	x.xxx_hidden_Status = v
 }
 
 func (x *Echo) SetMessage(v string) {
@@ -167,15 +104,19 @@ func (x *Echo) SetSequence(v uint64) {
 	x.xxx_hidden_Sequence = v
 }
 
+func (x *Echo) SetCircularShift(v int64) {
+	x.xxx_hidden_CircularShift = v
+}
+
 func (x *Echo) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
 
-func (x *Echo) HasError() bool {
+func (x *Echo) HasStatus() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Error != nil
+	return x.xxx_hidden_Status != nil
 }
 
 func (x *Echo) HasDateCreated() bool {
@@ -185,8 +126,8 @@ func (x *Echo) HasDateCreated() bool {
 	return x.xxx_hidden_DateCreated != nil
 }
 
-func (x *Echo) ClearError() {
-	x.xxx_hidden_Error = nil
+func (x *Echo) ClearStatus() {
+	x.xxx_hidden_Status = nil
 }
 
 func (x *Echo) ClearDateCreated() {
@@ -196,20 +137,97 @@ func (x *Echo) ClearDateCreated() {
 type Echo_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Error       *Error
-	Message     string
-	Sequence    uint64
-	DateCreated *timestamppb.Timestamp
+	// Server should response with this status.
+	Status   *Status
+	Message  string
+	Sequence uint64
+	// Perform a circular shift on themessage
+	// to the right by the given number.
+	// If the number is negative, shift to the left.
+	CircularShift int64
+	DateCreated   *timestamppb.Timestamp
 }
 
 func (b0 Echo_builder) Build() *Echo {
 	m0 := &Echo{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Error = b.Error
+	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Message = b.Message
 	x.xxx_hidden_Sequence = b.Sequence
+	x.xxx_hidden_CircularShift = b.CircularShift
 	x.xxx_hidden_DateCreated = b.DateCreated
+	return m0
+}
+
+type Status struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Code    int32                  `protobuf:"varint,1,opt,name=code,proto3"`
+	xxx_hidden_Message string                 `protobuf:"bytes,2,opt,name=message,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *Status) Reset() {
+	*x = Status{}
+	mi := &file_echo_echo_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Status) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Status) ProtoMessage() {}
+
+func (x *Status) ProtoReflect() protoreflect.Message {
+	mi := &file_echo_echo_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *Status) GetCode() int32 {
+	if x != nil {
+		return x.xxx_hidden_Code
+	}
+	return 0
+}
+
+func (x *Status) GetMessage() string {
+	if x != nil {
+		return x.xxx_hidden_Message
+	}
+	return ""
+}
+
+func (x *Status) SetCode(v int32) {
+	x.xxx_hidden_Code = v
+}
+
+func (x *Status) SetMessage(v string) {
+	x.xxx_hidden_Message = v
+}
+
+type Status_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Code    int32
+	Message string
+}
+
+func (b0 Status_builder) Build() *Status {
+	m0 := &Status{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Code = b.Code
+	x.xxx_hidden_Message = b.Message
 	return m0
 }
 
@@ -217,15 +235,16 @@ var File_echo_echo_proto protoreflect.FileDescriptor
 
 const file_echo_echo_proto_rawDesc = "" +
 	"\n" +
-	"\x0fecho/echo.proto\x12\x04echo\x1a\x1fgoogle/protobuf/timestamp.proto\"5\n" +
-	"\x05Error\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\rR\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\x9e\x01\n" +
-	"\x04Echo\x12!\n" +
-	"\x05error\x18\x01 \x01(\v2\v.echo.ErrorR\x05error\x12\x18\n" +
+	"\x0fecho/echo.proto\x12\x04echo\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc8\x01\n" +
+	"\x04Echo\x12$\n" +
+	"\x06status\x18\x01 \x01(\v2\f.echo.StatusR\x06status\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1a\n" +
-	"\bsequence\x18\x03 \x01(\x04R\bsequence\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated2\xb4\x01\n" +
+	"\bsequence\x18\x03 \x01(\x04R\bsequence\x12%\n" +
+	"\x0ecircular_shift\x18\x04 \x01(\x03R\rcircularShift\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"6\n" +
+	"\x06Status\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage2\xb4\x01\n" +
 	"\vEchoService\x12!\n" +
 	"\x05Unary\x12\n" +
 	".echo.Echo\x1a\n" +
@@ -243,21 +262,21 @@ const file_echo_echo_proto_rawDesc = "" +
 
 var file_echo_echo_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_echo_echo_proto_goTypes = []any{
-	(*Error)(nil),                 // 0: echo.Error
-	(*Echo)(nil),                  // 1: echo.Echo
+	(*Echo)(nil),                  // 0: echo.Echo
+	(*Status)(nil),                // 1: echo.Status
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
 var file_echo_echo_proto_depIdxs = []int32{
-	0, // 0: echo.Echo.error:type_name -> echo.Error
+	1, // 0: echo.Echo.status:type_name -> echo.Status
 	2, // 1: echo.Echo.date_created:type_name -> google.protobuf.Timestamp
-	1, // 2: echo.EchoService.Unary:input_type -> echo.Echo
-	1, // 3: echo.EchoService.ClientStream:input_type -> echo.Echo
-	1, // 4: echo.EchoService.ServerStream:input_type -> echo.Echo
-	1, // 5: echo.EchoService.BidiStream:input_type -> echo.Echo
-	1, // 6: echo.EchoService.Unary:output_type -> echo.Echo
-	1, // 7: echo.EchoService.ClientStream:output_type -> echo.Echo
-	1, // 8: echo.EchoService.ServerStream:output_type -> echo.Echo
-	1, // 9: echo.EchoService.BidiStream:output_type -> echo.Echo
+	0, // 2: echo.EchoService.Unary:input_type -> echo.Echo
+	0, // 3: echo.EchoService.ClientStream:input_type -> echo.Echo
+	0, // 4: echo.EchoService.ServerStream:input_type -> echo.Echo
+	0, // 5: echo.EchoService.BidiStream:input_type -> echo.Echo
+	0, // 6: echo.EchoService.Unary:output_type -> echo.Echo
+	0, // 7: echo.EchoService.ClientStream:output_type -> echo.Echo
+	0, // 8: echo.EchoService.ServerStream:output_type -> echo.Echo
+	0, // 9: echo.EchoService.BidiStream:output_type -> echo.Echo
 	6, // [6:10] is the sub-list for method output_type
 	2, // [2:6] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

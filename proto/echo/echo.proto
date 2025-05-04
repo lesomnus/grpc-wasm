@@ -14,16 +14,22 @@ service EchoService {
 	rpc BidiStream(stream Echo) returns (stream Echo) {};
 }
 
-message Error {
-	uint32 code = 1;
-	string message = 2;
-}
-
 message Echo {
-	Error error = 1;
+	// Server should response with this status.
+	Status status = 1;
 
 	string message = 2;
 	uint64 sequence = 3;
+	
+	// Perform a circular shift on themessage
+	// to the right by the given number.
+	// If the number is negative, shift to the left.
+	int64 circular_shift = 4;
 
 	google.protobuf.Timestamp date_created = 15;
 }
+
+message Status {
+	int32 code = 1;
+	string message = 2;
+}  
