@@ -4,105 +4,118 @@ package grpcwasm_test
 
 import (
 	"context"
+	"fmt"
 	"sync"
+	"syscall/js"
 	"testing"
 
 	grpcwasm "github.com/lesomnus/grpc-wasm"
 	"github.com/lesomnus/grpc-wasm/internal/echo"
+	"github.com/lesomnus/grpc-wasm/internal/jz"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func protoMarshal[T proto.Message](v T) (js.Value, error) {
+	data, err := proto.Marshal(v)
+	if err != nil {
+		return js.Undefined(), fmt.Errorf("marshal: %w", err)
+	}
+
+	buf := js.Global().Get("Uint8Array").New(len(data))
+	js.CopyBytesToJS(buf, data)
+
+	return buf, nil
+}
+
+func protoUnmarshal[T proto.Message](v js.Value, m T) error {
+	data := make([]byte, v.Length())
+	js.CopyBytesToGo(data, v)
+
+	return proto.Unmarshal(data, m)
+}
+
+func jsInvoke[T proto.Message](x *require.Assertions, conn *grpcwasm.Conn, method string, m T, opt map[string]any) (js.Value, js.Value) {
+	in, err := protoMarshal(m)
+	x.NoError(err)
+
+	if opt == nil {
+		opt = map[string]any{}
+	}
+	p := conn.JsInvoke(js.Undefined(), []js.Value{js.ValueOf(method), in, js.ValueOf(opt)}).(js.Value)
+	return jz.Await(p)
+}
+
 func TestConn(t *testing.T) {
 	t.Run("unary", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		req := &echo.Echo{}
+		req := echo.Echo{}
 		req.SetMessage("Lebowski")
 		req.SetSequence(42)
 		req.SetCircularShift(3)
 		req.SetDateCreated(timestamppb.Now())
 
-		in, err := proto.Marshal(req)
-		x.NoError(err)
+		v, js_err := jsInvoke(x, conn, echo.EchoService_Unary_FullMethodName, &req, nil)
+		x.Equal(js.TypeObject, js_err.Type())
+		x.Equal(js.TypeObject, v.Type())
 
-		out := []byte{}
-		err = conn.Invoke(ctx, echo.EchoService_Unary_FullMethodName, in, &out)
-		x.NoError(err)
-		x.NotEmpty(out)
-
-		res := &echo.Echo{}
-		err = proto.Unmarshal(out, res)
+		res := echo.Echo{}
+		err := protoUnmarshal(v.Get("response"), &res)
 		x.NoError(err)
 		x.Equal("skiLebow", res.GetMessage())
 		x.Equal(req.GetSequence(), res.GetSequence())
 		x.Less(req.GetDateCreated().AsTime(), res.GetDateCreated().AsTime())
 	}))
 	t.Run("unary with error", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		req := &echo.Echo{}
+		req := echo.Echo{}
 		req.SetStatus(echo.Status_builder{
 			Code:    int32(codes.FailedPrecondition),
 			Message: "Is this your homework, Larry?",
 		}.Build())
 
-		in, err := proto.Marshal(req)
-		x.NoError(err)
-
-		out := []byte{}
-		err = conn.Invoke(ctx, echo.EchoService_Unary_FullMethodName, in, &out)
-		x.Error(err)
-
-		s, ok := status.FromError(err)
-		x.True(ok)
-		x.Equal(codes.FailedPrecondition, s.Code())
-		x.Equal("Is this your homework, Larry?", s.Message())
+		v, js_err := jsInvoke(x, conn, echo.EchoService_Unary_FullMethodName, &req, nil)
+		x.True(js_err.IsUndefined())
+		x.Equal(js.TypeObject, v.Type())
+		x.Equal(int(codes.FailedPrecondition), v.Get("status").Get("code").Int())
+		x.Equal("Is this your homework, Larry?", v.Get("status").Get("message").String())
 	}))
 	t.Run("unary with metadata", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		req := &echo.Echo{}
+		req := echo.Echo{}
 
-		in, err := proto.Marshal(req)
-		x.NoError(err)
-
-		out := []byte{}
-		ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("foo", "bar"))
-		header := metadata.MD{}
-		trailer := metadata.MD{}
-		err = conn.Invoke(ctx, echo.EchoService_Unary_FullMethodName, in, &out, grpc.Header(&header), grpc.Trailer(&trailer))
-		x.NoError(err)
-		x.Equal(header.Get("foo"), []string{"bar"})
-		x.Equal(header.Get("timing"), []string{"header"})
-		x.Equal(trailer.Get("foo"), []string{"bar"})
-		x.Equal(trailer.Get("timing"), []string{"trailer"})
+		v, js_err := jsInvoke(x, conn, echo.EchoService_Unary_FullMethodName, &req, map[string]any{
+			"meta": js.ValueOf(map[string]any{
+				"foo": []any{"bar"},
+			}),
+		})
+		x.True(js_err.IsUndefined())
+		x.Equal(js.TypeObject, v.Type())
+		x.Equal("bar", v.Get("header").Get("foo").Index(0).String())
+		x.Equal("header", v.Get("header").Get("timing").Index(0).String())
+		x.Equal("bar", v.Get("trailer").Get("foo").Index(0).String())
+		x.Equal("trailer", v.Get("trailer").Get("timing").Index(0).String())
 	}))
 	t.Run("unary with error and metadata", withConn(func(ctx context.Context, x *require.Assertions, conn *grpcwasm.Conn) {
-		req := &echo.Echo{}
+		req := echo.Echo{}
 		req.SetStatus(echo.Status_builder{
 			Code:    int32(codes.FailedPrecondition),
 			Message: "Is this your homework, Larry?",
 		}.Build())
 
-		in, err := proto.Marshal(req)
-		x.NoError(err)
-
-		out := []byte{}
-		ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("foo", "bar"))
-		header := metadata.MD{}
-		trailer := metadata.MD{}
-		err = conn.Invoke(ctx, echo.EchoService_Unary_FullMethodName, in, &out, grpc.Header(&header), grpc.Trailer(&trailer))
-		x.Error(err)
-
-		s, ok := status.FromError(err)
-		x.True(ok)
-		x.Equal(codes.FailedPrecondition, s.Code())
-
-		x.Equal("Is this your homework, Larry?", s.Message())
-		x.Equal(header.Get("foo"), []string{"bar"})
-		x.Equal(header.Get("timing"), []string{"header"})
-		x.Equal(trailer.Get("foo"), []string{"bar"})
-		x.Equal(trailer.Get("timing"), []string{"trailer"})
+		v, js_err := jsInvoke(x, conn, echo.EchoService_Unary_FullMethodName, &req, map[string]any{
+			"meta": js.ValueOf(map[string]any{
+				"foo": []any{"bar"},
+			}),
+		})
+		x.True(js_err.IsUndefined())
+		x.Equal(js.TypeObject, v.Type())
+		x.Equal(int(codes.FailedPrecondition), v.Get("status").Get("code").Int())
+		x.Equal("Is this your homework, Larry?", v.Get("status").Get("message").String())
+		x.Equal("bar", v.Get("header").Get("foo").Index(0).String())
+		x.Equal("header", v.Get("header").Get("timing").Index(0).String())
+		x.Equal("bar", v.Get("trailer").Get("foo").Index(0).String())
+		x.Equal("trailer", v.Get("trailer").Get("timing").Index(0).String())
 	}))
 }
 
