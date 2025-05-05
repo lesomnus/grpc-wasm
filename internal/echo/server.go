@@ -51,7 +51,7 @@ func (EchoServer) Once(ctx context.Context, req *EchoRequest) (*EchoResponse, er
 	}.Build(), nil
 }
 
-func (EchoServer) many(seq *uint32, req *EchoRequest, stream grpc.ServerStreamingServer[EchoResponse]) error {
+func (EchoServer) many(seq *uint32, req *EchoRequest, h func(res *EchoResponse) error) error {
 	if err := req.Error(); err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (EchoServer) many(seq *uint32, req *EchoRequest, stream grpc.ServerStreamin
 	}
 	for range n {
 		v = circularShift(v, int(req.GetCircularShift()))
-		if err := stream.Send(EchoResponse_builder{
+		if err := h(EchoResponse_builder{
 			Message:     v,
 			Sequence:    *seq,
 			DateCreated: timestamppb.Now(),
@@ -75,13 +75,35 @@ func (EchoServer) many(seq *uint32, req *EchoRequest, stream grpc.ServerStreamin
 	}
 	return nil
 }
+
 func (s EchoServer) Many(req *EchoRequest, stream grpc.ServerStreamingServer[EchoResponse]) error {
 	seq := uint32(0)
-	return s.many(&seq, req, stream)
+	return s.many(&seq, req, stream.Send)
 }
 
-func (EchoServer) Buff(stream grpc.ClientStreamingServer[EchoRequest, EchoResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method Buff not implemented")
+func (s EchoServer) Buff(stream grpc.ClientStreamingServer[EchoRequest, EchoBatchResponse]) error {
+	items := []*EchoResponse{}
+
+	seq := uint32(0)
+	for {
+		req, err := stream.Recv()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return err
+		}
+		if err := s.many(&seq, req, func(res *EchoResponse) error {
+			items = append(items, res)
+			return nil
+		}); err != nil {
+			return err
+		}
+	}
+
+	return stream.SendAndClose(EchoBatchResponse_builder{
+		Items: items,
+	}.Build())
 }
 
 func (s EchoServer) Live(stream grpc.BidiStreamingServer[EchoRequest, EchoResponse]) error {
@@ -105,7 +127,7 @@ func (s EchoServer) Live(stream grpc.BidiStreamingServer[EchoRequest, EchoRespon
 			}
 			return err
 		}
-		if err := s.many(&seq, req, stream); err != nil {
+		if err := s.many(&seq, req, stream.Send); err != nil {
 			return err
 		}
 	}

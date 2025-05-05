@@ -2,6 +2,7 @@
 // @generated from protobuf file "echo/echo.proto" (package "echo", syntax proto3)
 // tslint:disable
 import { RpcOutputStream } from "@protobuf-ts/runtime-rpc";
+import { EchoBatchResponse } from "./echo";
 import { RpcInputStream } from "@protobuf-ts/runtime-rpc";
 import { EchoResponse } from "./echo";
 import { EchoRequest } from "./echo";
@@ -19,9 +20,9 @@ export interface IEchoService<T = ServerCallContext> {
      */
     many(request: EchoRequest, responses: RpcInputStream<EchoResponse>, context: T): Promise<void>;
     /**
-     * @generated from protobuf rpc: Buff(stream echo.EchoRequest) returns (echo.EchoResponse);
+     * @generated from protobuf rpc: Buff(stream echo.EchoRequest) returns (echo.EchoBatchResponse);
      */
-    buff(requests: RpcOutputStream<EchoRequest>, context: T): Promise<EchoResponse>;
+    buff(requests: RpcOutputStream<EchoRequest>, context: T): Promise<EchoBatchResponse>;
     /**
      * @generated from protobuf rpc: Live(stream echo.EchoRequest) returns (stream echo.EchoResponse);
      */

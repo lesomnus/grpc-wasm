@@ -10,7 +10,7 @@ option go_package = "github.com/lesomnus/grpc-wasm/internal/echo";
 service EchoService {
 	rpc Once(EchoRequest) returns (EchoResponse) {};
 	rpc Many(EchoRequest) returns (stream EchoResponse) {};
-	rpc Buff(stream EchoRequest) returns (EchoResponse) {};
+	rpc Buff(stream EchoRequest) returns (EchoBatchResponse) {};
 	rpc Live(stream EchoRequest) returns (stream EchoResponse) {};
 }
 

@@ -31,7 +31,7 @@ const (
 type EchoServiceClient interface {
 	Once(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (*EchoResponse, error)
 	Many(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[EchoResponse], error)
-	Buff(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[EchoRequest, EchoResponse], error)
+	Buff(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[EchoRequest, EchoBatchResponse], error)
 	Live(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[EchoRequest, EchoResponse], error)
 }
 
@@ -72,18 +72,18 @@ func (c *echoServiceClient) Many(ctx context.Context, in *EchoRequest, opts ...g
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type EchoService_ManyClient = grpc.ServerStreamingClient[EchoResponse]
 
-func (c *echoServiceClient) Buff(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[EchoRequest, EchoResponse], error) {
+func (c *echoServiceClient) Buff(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[EchoRequest, EchoBatchResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &EchoService_ServiceDesc.Streams[1], EchoService_Buff_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[EchoRequest, EchoResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[EchoRequest, EchoBatchResponse]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type EchoService_BuffClient = grpc.ClientStreamingClient[EchoRequest, EchoResponse]
+type EchoService_BuffClient = grpc.ClientStreamingClient[EchoRequest, EchoBatchResponse]
 
 func (c *echoServiceClient) Live(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[EchoRequest, EchoResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -104,7 +104,7 @@ type EchoService_LiveClient = grpc.BidiStreamingClient[EchoRequest, EchoResponse
 type EchoServiceServer interface {
 	Once(context.Context, *EchoRequest) (*EchoResponse, error)
 	Many(*EchoRequest, grpc.ServerStreamingServer[EchoResponse]) error
-	Buff(grpc.ClientStreamingServer[EchoRequest, EchoResponse]) error
+	Buff(grpc.ClientStreamingServer[EchoRequest, EchoBatchResponse]) error
 	Live(grpc.BidiStreamingServer[EchoRequest, EchoResponse]) error
 	mustEmbedUnimplementedEchoServiceServer()
 }
@@ -122,7 +122,7 @@ func (UnimplementedEchoServiceServer) Once(context.Context, *EchoRequest) (*Echo
 func (UnimplementedEchoServiceServer) Many(*EchoRequest, grpc.ServerStreamingServer[EchoResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Many not implemented")
 }
-func (UnimplementedEchoServiceServer) Buff(grpc.ClientStreamingServer[EchoRequest, EchoResponse]) error {
+func (UnimplementedEchoServiceServer) Buff(grpc.ClientStreamingServer[EchoRequest, EchoBatchResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Buff not implemented")
 }
 func (UnimplementedEchoServiceServer) Live(grpc.BidiStreamingServer[EchoRequest, EchoResponse]) error {
@@ -179,11 +179,11 @@ func _EchoService_Many_Handler(srv interface{}, stream grpc.ServerStream) error 
 type EchoService_ManyServer = grpc.ServerStreamingServer[EchoResponse]
 
 func _EchoService_Buff_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(EchoServiceServer).Buff(&grpc.GenericServerStream[EchoRequest, EchoResponse]{ServerStream: stream})
+	return srv.(EchoServiceServer).Buff(&grpc.GenericServerStream[EchoRequest, EchoBatchResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type EchoService_BuffServer = grpc.ClientStreamingServer[EchoRequest, EchoResponse]
+type EchoService_BuffServer = grpc.ClientStreamingServer[EchoRequest, EchoBatchResponse]
 
 func _EchoService_Live_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(EchoServiceServer).Live(&grpc.GenericServerStream[EchoRequest, EchoResponse]{ServerStream: stream})

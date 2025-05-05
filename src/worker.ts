@@ -19,6 +19,8 @@ export type BridgeWorker = {
 	dial(): Promise<ConnId>;
 	close(id: ConnId): Promise<void>;
 	invoke(id: ConnId, method: string, req: Uint8Array, option: CallOption): Promise<RpcResult>;
+	open_server_stream(id: ConnId, method: string, option: { meta?: Metadata }): Promise<StreamId>;
+	open_client_stream(id: ConnId, method: string, option: { meta?: Metadata }): Promise<StreamId>;
 	open_bidi_stream(id: ConnId, method: string, option: { meta?: Metadata }): Promise<StreamId>;
 	stream_header(id: StreamId): Promise<Metadata>;
 	stream_recv(id: StreamId): Promise<StreamResult>;
@@ -35,6 +37,8 @@ interface Socket {
 type Conn = {
 	close(): Promise<void>;
 	invoke(method: string, req: Uint8Array, option: CallOption): Promise<RpcResult>;
+	open_server_stream(method: string, option: { meta?: Metadata }): Promise<Stream>;
+	open_client_stream(method: string, option: { meta?: Metadata }): Promise<Stream>;
 	open_bidi_stream(method: string, option: { meta?: Metadata }): Promise<Stream>;
 };
 
@@ -172,6 +176,20 @@ expose({
 	invoke(id: ConnId, method: string, req: Uint8Array, option: CallOption): Promise<RpcResult> {
 		const conn = conns.must(id);
 		return conn.invoke(method, req, option);
+	},
+	async open_server_stream(id, method, option) {
+		const conn = conns.must(id);
+		const stream = await conn.open_server_stream(method, option);
+		stream.conn = conn;
+
+		return streams.set(stream);
+	},
+	async open_client_stream(id, method, option) {
+		const conn = conns.must(id);
+		const stream = await conn.open_client_stream(method, option);
+		stream.conn = conn;
+
+		return streams.set(stream);
 	},
 	async open_bidi_stream(id, method, option) {
 		const conn = conns.must(id);

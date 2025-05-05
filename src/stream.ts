@@ -12,10 +12,12 @@ export interface ServerStreamingClient extends ClientStream {
 
 export interface ClientStreamingClient extends ClientStream {
 	send(req: Uint8Array): Promise<void>;
-	close_send(): Promise<void>;
+	close_and_recv(): Promise<StreamResult>;
 }
 
-export interface BidiStreamingClient extends ServerStreamingClient, ClientStreamingClient {}
+export interface BidiStreamingClient extends ServerStreamingClient, ClientStreamingClient {
+	close_send(): Promise<void>;
+}
 
 export class BidiStream implements BidiStreamingClient {
 	private close_work: Promise<void> | undefined;
@@ -43,6 +45,12 @@ export class BidiStream implements BidiStreamingClient {
 	async close_send(): Promise<void> {
 		this.throwIfClosed();
 		return this.worker.stream_close_send(this.id);
+	}
+
+	async close_and_recv(): Promise<StreamResult> {
+		this.throwIfClosed();
+		await this.close_send();
+		return this.recv();
 	}
 
 	close(): Promise<void> {

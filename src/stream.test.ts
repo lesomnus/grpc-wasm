@@ -1,11 +1,110 @@
 import { GrpcStatusCode } from "@protobuf-ts/grpcweb-transport";
-import type { MessageType } from "@protobuf-ts/runtime";
 import { assert, beforeEach, describe, expect, test } from "vitest";
 
-import { type CallOption, type Conn, open } from "./index";
+import { type Conn, open } from "./index";
 
-import { EchoRequest, EchoResponse } from "./test/proto/echo/echo";
-import { Timestamp } from "./test/proto/google/protobuf/timestamp";
+import { EchoBatchResponse, EchoRequest, EchoResponse } from "./test/proto/echo/echo";
+
+describe("server stream", () => {
+	let conn: Conn;
+	beforeEach(async () => {
+		const p = new URL("./test/echobridge.wasm", import.meta.url);
+		const sock = await open(p.toString());
+		const conn_ = await sock.dial();
+		conn = conn_;
+		return async () => {
+			await conn_.close();
+			await sock.close();
+		};
+	});
+
+	test("close", async () => {
+		const req: EchoRequest = {
+			message: "Lebowski",
+			circularShift: 1,
+			repeat: 3,
+		};
+		const stream = await conn.open_server_stream(
+			"/echo.EchoService/Many",
+			EchoRequest.toBinary(req),
+			{},
+		);
+
+		await stream.close();
+
+		await expect(stream.recv()).rejects.toThrow("closed");
+	});
+	test("recv", async () => {
+		const req: EchoRequest = {
+			message: "Lebowski",
+			repeat: 3,
+		};
+		const stream = await conn.open_server_stream(
+			"/echo.EchoService/Many",
+			EchoRequest.toBinary(req),
+			{},
+		);
+
+		{
+			const result = await stream.recv();
+			if (result.done) assert.fail();
+			const res = EchoResponse.fromBinary(result.response);
+			expect(res.sequence).toBe(0);
+		}
+		{
+			const result = await stream.recv();
+			if (result.done) assert.fail();
+			const res = EchoResponse.fromBinary(result.response);
+			expect(res.sequence).toBe(1);
+		}
+		{
+			const result = await stream.recv();
+			if (result.done) assert.fail();
+			const res = EchoResponse.fromBinary(result.response);
+			expect(res.sequence).toBe(2);
+		}
+	});
+});
+
+describe("client stream", () => {
+	let conn: Conn;
+	beforeEach(async () => {
+		const p = new URL("./test/echobridge.wasm", import.meta.url);
+		const sock = await open(p.toString());
+		const conn_ = await sock.dial();
+		conn = conn_;
+		return async () => {
+			await conn_.close();
+			await sock.close();
+		};
+	});
+
+	test("close", async () => {
+		const stream = await conn.open_client_stream("/echo.EchoService/Buff", {});
+
+		await stream.close();
+
+		await expect(stream.close_and_recv()).rejects.toThrow("closed");
+	});
+	test("send and recv", async () => {
+		const stream = await conn.open_client_stream("/echo.EchoService/Buff", {});
+
+		const req: EchoRequest = {
+			message: "Lebowski",
+			repeat: 3,
+		};
+		await stream.send(EchoRequest.toBinary(req));
+
+		const result = await stream.close_and_recv();
+		if (result.done) assert.fail();
+
+		const res = EchoBatchResponse.fromBinary(result.response);
+		expect(res.items).lengthOf(3);
+		expect(res.items[0].sequence).toBe(0);
+		expect(res.items[1].sequence).toBe(1);
+		expect(res.items[2].sequence).toBe(2);
+	});
+});
 
 describe("bidi stream", () => {
 	let conn: Conn;

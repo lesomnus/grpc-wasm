@@ -5,6 +5,7 @@ import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
 import { EchoService } from "./echo";
 import type { DuplexStreamingCall } from "@protobuf-ts/runtime-rpc";
+import type { EchoBatchResponse } from "./echo";
 import type { ClientStreamingCall } from "@protobuf-ts/runtime-rpc";
 import type { ServerStreamingCall } from "@protobuf-ts/runtime-rpc";
 import { stackIntercept } from "@protobuf-ts/runtime-rpc";
@@ -25,9 +26,9 @@ export interface IEchoServiceClient {
      */
     many(input: EchoRequest, options?: RpcOptions): ServerStreamingCall<EchoRequest, EchoResponse>;
     /**
-     * @generated from protobuf rpc: Buff(stream echo.EchoRequest) returns (echo.EchoResponse);
+     * @generated from protobuf rpc: Buff(stream echo.EchoRequest) returns (echo.EchoBatchResponse);
      */
-    buff(options?: RpcOptions): ClientStreamingCall<EchoRequest, EchoResponse>;
+    buff(options?: RpcOptions): ClientStreamingCall<EchoRequest, EchoBatchResponse>;
     /**
      * @generated from protobuf rpc: Live(stream echo.EchoRequest) returns (stream echo.EchoResponse);
      */
@@ -57,11 +58,11 @@ export class EchoServiceClient implements IEchoServiceClient, ServiceInfo {
         return stackIntercept<EchoRequest, EchoResponse>("serverStreaming", this._transport, method, opt, input);
     }
     /**
-     * @generated from protobuf rpc: Buff(stream echo.EchoRequest) returns (echo.EchoResponse);
+     * @generated from protobuf rpc: Buff(stream echo.EchoRequest) returns (echo.EchoBatchResponse);
      */
-    buff(options?: RpcOptions): ClientStreamingCall<EchoRequest, EchoResponse> {
+    buff(options?: RpcOptions): ClientStreamingCall<EchoRequest, EchoBatchResponse> {
         const method = this.methods[2], opt = this._transport.mergeOptions(options);
-        return stackIntercept<EchoRequest, EchoResponse>("clientStreaming", this._transport, method, opt);
+        return stackIntercept<EchoRequest, EchoBatchResponse>("clientStreaming", this._transport, method, opt);
     }
     /**
      * @generated from protobuf rpc: Live(stream echo.EchoRequest) returns (stream echo.EchoResponse);

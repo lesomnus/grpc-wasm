@@ -124,7 +124,7 @@ func (c *Conn) JsInvoke(this js.Value, args []js.Value) any {
 //		recv: ()=>Promise<StreamResult>
 //	}
 //	function(method: string, option: {meta?: Metadata}): Promise<Stream>;
-func (c *Conn) JsOpenBidiStream(this js.Value, args []js.Value) any {
+func (c *Conn) jsOpenStream(desc *grpc.StreamDesc, _ js.Value, args []js.Value) any {
 	return c.scope.Promise(func() (js.Value, js.Value) {
 		if len(args) != 2 {
 			return js.Undefined(), jz.Error("expects 2 arguments: method, and option")
@@ -142,7 +142,7 @@ func (c *Conn) JsOpenBidiStream(this js.Value, args []js.Value) any {
 			ctx = metadata.NewOutgoingContext(ctx, meta)
 		}
 
-		stream, err := NewStream(ctx, c, &grpc.StreamDesc{ServerStreams: true, ClientStreams: true}, method)
+		stream, err := NewStream(ctx, c, desc, method)
 		if err != nil {
 			return js.Undefined(), jz.ToError(err)
 		}
@@ -151,11 +151,25 @@ func (c *Conn) JsOpenBidiStream(this js.Value, args []js.Value) any {
 	})
 }
 
+func (c *Conn) JsOpenServerStream(this js.Value, args []js.Value) any {
+	return c.jsOpenStream(&grpc.StreamDesc{ServerStreams: true}, this, args)
+}
+
+func (c *Conn) JsOpenClientStream(this js.Value, args []js.Value) any {
+	return c.jsOpenStream(&grpc.StreamDesc{ClientStreams: true}, this, args)
+}
+
+func (c *Conn) JsOpenBidiStream(this js.Value, args []js.Value) any {
+	return c.jsOpenStream(&grpc.StreamDesc{ServerStreams: true, ClientStreams: true}, this, args)
+}
+
 func (c Conn) ToJs() js.Value {
 	return js.ValueOf(map[string]any{
 		"close":  c.scope.FuncOf(c.JsClose),
 		"invoke": c.scope.FuncOf(c.JsInvoke),
 
-		"open_bidi_stream": c.scope.FuncOf(c.JsOpenBidiStream),
+		"open_server_stream": c.scope.FuncOf(c.JsOpenServerStream),
+		"open_client_stream": c.scope.FuncOf(c.JsOpenClientStream),
+		"open_bidi_stream":   c.scope.FuncOf(c.JsOpenBidiStream),
 	})
 }

@@ -330,6 +330,6 @@ export const Status = new Status$Type();
 export const EchoService = new ServiceType("echo.EchoService", [
     { name: "Once", options: {}, I: EchoRequest, O: EchoResponse },
     { name: "Many", serverStreaming: true, options: {}, I: EchoRequest, O: EchoResponse },
-    { name: "Buff", clientStreaming: true, options: {}, I: EchoRequest, O: EchoResponse },
+    { name: "Buff", clientStreaming: true, options: {}, I: EchoRequest, O: EchoBatchResponse },
     { name: "Live", serverStreaming: true, clientStreaming: true, options: {}, I: EchoRequest, O: EchoResponse }
 ]);
