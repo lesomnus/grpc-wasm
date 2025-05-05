@@ -50,6 +50,7 @@ func (EchoServer) Once(ctx context.Context, req *EchoRequest) (*EchoResponse, er
 		DateCreated: timestamppb.Now(),
 	}.Build(), nil
 }
+
 func (EchoServer) many(seq *uint32, req *EchoRequest, stream grpc.ServerStreamingServer[EchoResponse]) error {
 	if err := req.Error(); err != nil {
 		return err
@@ -78,9 +79,11 @@ func (s EchoServer) Many(req *EchoRequest, stream grpc.ServerStreamingServer[Ech
 	seq := uint32(0)
 	return s.many(&seq, req, stream)
 }
-func (EchoServer) Buff(grpc.ClientStreamingServer[EchoRequest, EchoResponse]) error {
+
+func (EchoServer) Buff(stream grpc.ClientStreamingServer[EchoRequest, EchoResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Buff not implemented")
 }
+
 func (s EchoServer) Live(stream grpc.BidiStreamingServer[EchoRequest, EchoResponse]) error {
 	ctx := stream.Context()
 	if md, has_md := metadata.FromIncomingContext(ctx); has_md {

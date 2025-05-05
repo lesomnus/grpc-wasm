@@ -21,10 +21,10 @@ export type BridgeWorker = {
 	invoke(id: ConnId, method: string, req: Uint8Array, option: CallOption): Promise<RpcResult>;
 	open_bidi_stream(id: ConnId, method: string, option: { meta?: Metadata }): Promise<StreamId>;
 	stream_header(id: StreamId): Promise<Metadata>;
-	stream_close(id: StreamId): Promise<void>;
-	stream_close_send(id: StreamId): Promise<void>;
-	stream_send(id: StreamId, req: Uint8Array): Promise<void>;
 	stream_recv(id: StreamId): Promise<StreamResult>;
+	stream_send(id: StreamId, req: Uint8Array): Promise<void>;
+	stream_close_send(id: StreamId): Promise<void>;
+	stream_close(id: StreamId): Promise<void>;
 };
 
 interface Socket {
@@ -41,10 +41,10 @@ type Conn = {
 type Stream = {
 	conn: Conn;
 	header(): Promise<Metadata>;
-	close(): Promise<void>;
-	close_send(): Promise<void>;
-	send(req: Uint8Array): Promise<void>;
 	recv(): Promise<StreamResult>;
+	send(req: Uint8Array): Promise<void>;
+	close_send(): Promise<void>;
+	close(): Promise<void>;
 };
 
 type Bridge = {

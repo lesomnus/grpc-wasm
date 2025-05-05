@@ -111,7 +111,7 @@ func (l *Listener) JsDial(this js.Value, args []js.Value) any {
 		return jz.Reject(jz.ToError(err))
 	}
 
-	return jz.Resolve(conn.ToJsValue())
+	return jz.Resolve(conn.ToJs())
 }
 
 func (l *Listener) ToJsValue() js.Value {
