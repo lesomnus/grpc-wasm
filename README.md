@@ -63,7 +63,27 @@ await conn.close()
 await sock.close()
 ```
 
-### Vite
+### with [timostamm/protobuf-ts](https://github.com/timostamm/protobuf-ts)
+
+```ts
+import { open } from "grpc-wasm";
+import { GrpcWasmTransport } from "grpc-wasm/protobuf-ts";
+
+const sock = await open('path/to/your/bridge.wasm')
+const conn = await sock.dial()
+const transport = new GrpcWasmTransport({ conn });
+
+const client = new EchoServiceClient(transport);
+const { response } = await client.Once({
+	message: "Royale with Cheese",
+	withCircularShift: 6n
+})
+
+console.log(response.message)
+// "Cheese Royale with "
+```
+
+### with Vite
 
 You have to add following option to your Vite config:
 
@@ -77,7 +97,6 @@ definedConfig({
 	},
 })
 ```
-
 
 ## Architecture
 
