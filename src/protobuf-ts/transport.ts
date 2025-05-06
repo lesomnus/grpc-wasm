@@ -1,3 +1,4 @@
+import { GrpcStatusCode } from "@protobuf-ts/grpcweb-transport";
 import {
 	ClientStreamingCall,
 	DuplexStreamingCall,
@@ -22,7 +23,6 @@ import {
 	stream_close_and_recv,
 } from "../stream";
 
-import { GrpcStatusCode } from "@protobuf-ts/grpcweb-transport";
 import type { Metadata, StreamFinalResult } from "../types";
 import type { GrpcWasmOptions } from "./options";
 

@@ -23,10 +23,18 @@ class ClientSock {
 }
 
 export async function open(app: string | WebAssembly.Module): Promise<Sock> {
-	const w = new Worker("./worker.ts", {
-		_baseURL: import.meta.url,
-		type: "module",
-	});
+	let w: Worker;
+	if (import.meta.env.DEV) {
+		w = new Worker("./worker.ts", {
+			_baseURL: import.meta.url,
+			type: "module",
+		});
+	} else {
+		w = new Worker("./worker.es.js", {
+			_baseURL: import.meta.url,
+			type: "module",
+		});
+	}
 	const b = await spawn<BridgeWorker>(w);
 	await b.start(app);
 	return new ClientSock(b);

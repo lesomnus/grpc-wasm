@@ -41,7 +41,7 @@ Assuming your *bridge* code is located at `./cmd/bridge`, build it into WASM:
 GOOS=js GOARCH=wasm go build -o ./bridge.wasm ./cmd/bridge
 ```
 
-### Client (Browser)
+### Client
 ```ts
 import { open } from "grpc-wasm";
 
@@ -62,6 +62,22 @@ console.log(res.message)
 await conn.close()
 await sock.close()
 ```
+
+### Vite
+
+You have to add following option to your Vite config:
+
+> ref: [vitejs/vite#15547](https://github.com/vitejs/vite/discussions/15547#discussioncomment-12890308)
+
+```ts
+definedConfig({
+	// ...
+	optimizeDeps: {
+		exclude: ["grpc-wasm"],
+	},
+})
+```
+
 
 ## Architecture
 

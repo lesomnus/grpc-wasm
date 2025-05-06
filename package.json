@@ -1,33 +1,51 @@
 {
-  "name": "grpc-wasm",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "check": "biome check --write",
-    "postinstall": "patch-package",
-    "test": "vitest --workspace=vitest.workspace.ts"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@protobuf-ts/grpcweb-transport": "^2.10.0",
-    "@protobuf-ts/plugin": "^2.10.0",
-    "@types/node": "^22.15.3",
-    "@vitest/browser": "^3.1.2",
-    "@vitest/web-worker": "^3.1.2",
-    "globals": "^16.0.0",
-    "patch-package": "^8.0.0",
-    "playwright": "^1.52.0",
-    "typescript": "~5.7.2",
-    "vite": "^6.3.1",
-    "vitest": "^3.1.2"
-  },
-  "dependencies": {
-    "threads": "^1.7.0"
-  },
-  "peerDependencies": {
-    "@protobuf-ts/runtime-rpc": "^2.10.0"
-  }
+	"name": "grpc-wasm",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -b && vite build",
+		"check": "biome check --write",
+		"test": "vitest --workspace=vitest.workspace.ts"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.es.js",
+			"require": "./dist/index.cjs.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./protobuf-ts": {
+			"import": "./dist/protobuf-ts.es.js",
+			"require": "./dist/protobuf-ts.cjs.js",
+			"types": "./dist/protobuf-ts/index.d.ts"
+		}
+	},
+	"types": "./dist/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"protobuf-ts": ["./dist/protobuf-ts/index.d.ts"]
+		}
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@protobuf-ts/grpcweb-transport": "^2.10.0",
+		"@protobuf-ts/plugin": "^2.10.0",
+		"@types/node": "^22.15.3",
+		"@vitest/browser": "^3.1.2",
+		"@vitest/web-worker": "^3.1.2",
+		"globals": "^16.0.0",
+		"patch-package": "^8.0.0",
+		"playwright": "^1.52.0",
+		"typescript": "~5.7.2",
+		"vite": "^6.3.1",
+		"vite-plugin-dts": "^4.5.3",
+		"vitest": "^3.1.2"
+	},
+	"dependencies": {
+		"threads": "^1.7.0"
+	},
+	"peerDependencies": {
+		"@protobuf-ts/runtime-rpc": "^2.10.0"
+	}
 }
