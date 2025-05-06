@@ -96,7 +96,6 @@ describe("client stream", () => {
 		await stream.send(EchoRequest.toBinary(req));
 
 		const result = await stream.close_and_recv();
-		if (result.done) assert.fail();
 
 		const res = EchoBatchResponse.fromBinary(result.response);
 		expect(res.items).lengthOf(3);

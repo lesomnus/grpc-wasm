@@ -5,6 +5,7 @@ import { assert, beforeEach, describe, expect, test } from "vitest";
 import { GrpcWasmTransport } from "./transport";
 
 import { open } from "../index";
+import type { EchoResponse } from "../test/proto/echo/echo";
 import { EchoServiceClient } from "../test/proto/echo/echo.client";
 
 async function make_transport() {
@@ -22,7 +23,7 @@ describe("unary", () => {
 		return () => transport.close();
 	});
 
-	test("call", async () => {
+	test("invoke", async () => {
 		const { response } = await client.once({
 			message: "Lebowski",
 			circularShift: 3,
@@ -105,5 +106,83 @@ describe("unary", () => {
 			expect(e.code).toBe(GrpcStatusCode[GrpcStatusCode.FAILED_PRECONDITION]);
 			expect(e.message).toBe("Is this your homework, Larry?");
 		}
+	});
+});
+
+describe("server stream", () => {
+	let client: EchoServiceClient;
+	beforeEach(async () => {
+		const transport = await make_transport();
+		client = new EchoServiceClient(transport);
+		return () => transport.close();
+	});
+
+	test("send and recv", async () => {
+		const { responses } = client.many({
+			message: "Lebowski",
+			repeat: 3,
+		});
+
+		const vs: EchoResponse[] = [];
+		for await (const res of responses) {
+			vs.push(res);
+		}
+		expect(vs).toHaveLength(3);
+		expect(vs[0].sequence).toBe(0);
+		expect(vs[1].sequence).toBe(1);
+		expect(vs[2].sequence).toBe(2);
+	});
+});
+
+describe("client stream", () => {
+	let client: EchoServiceClient;
+	beforeEach(async () => {
+		const transport = await make_transport();
+		client = new EchoServiceClient(transport);
+		return () => transport.close();
+	});
+
+	test("send and recv", async () => {
+		const { requests, response } = client.buff({
+			message: "Lebowski",
+			repeat: 3,
+		});
+
+		await requests.send({ message: "Lebowski" });
+		await requests.send({ message: "Lebowski" });
+		await requests.send({ message: "Lebowski" });
+		await requests.complete();
+
+		const { items } = await response;
+		expect(items).toHaveLength(3);
+		expect(items[0].sequence).toBe(0);
+		expect(items[1].sequence).toBe(1);
+		expect(items[2].sequence).toBe(2);
+	});
+});
+
+describe("bidi stream", () => {
+	let client: EchoServiceClient;
+	beforeEach(async () => {
+		const transport = await make_transport();
+		client = new EchoServiceClient(transport);
+		return () => transport.close();
+	});
+
+	test("send multiple", async () => {
+		const { requests, responses } = client.live();
+		await requests.send({ message: "Lebowski" });
+		await requests.send({ message: "Lebowski" });
+		await requests.send({ message: "Lebowski" });
+		await requests.complete();
+
+		const vs: EchoResponse[] = [];
+		for await (const res of responses) {
+			vs.push(res);
+		}
+		expect(vs).toHaveLength(3);
+		expect(vs[0].sequence).toBe(0);
+		expect(vs[1].sequence).toBe(1);
+		expect(vs[2].sequence).toBe(2);
 	});
 });

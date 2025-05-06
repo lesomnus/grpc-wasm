@@ -1,9 +1,9 @@
 import {
-	type ClientStreamingCall,
-	Deferred,
-	type DuplexStreamingCall,
+	ClientStreamingCall,
+	DuplexStreamingCall,
 	type MethodInfo,
 	RpcError,
+	type RpcInputStream,
 	type RpcMetadata,
 	type RpcOptions,
 	RpcOutputStreamController,
@@ -16,9 +16,14 @@ import {
 
 import type { Conn } from "../conn";
 import { Defer } from "../defer";
+import {
+	type BidiStreamingClient,
+	type ServerStreamingClient,
+	stream_close_and_recv,
+} from "../stream";
 
 import { GrpcStatusCode } from "@protobuf-ts/grpcweb-transport";
-import type { Metadata } from "../types";
+import type { Metadata, StreamFinalResult } from "../types";
 import type { GrpcWasmOptions } from "./options";
 
 export class GrpcWasmTransport implements RpcTransport {
@@ -89,6 +94,8 @@ export class GrpcWasmTransport implements RpcTransport {
 		);
 	}
 
+	// private handle_server_stream/
+
 	serverStreaming<I extends object, O extends object>(
 		method: MethodInfo<I, O>,
 		input: I,
@@ -98,46 +105,41 @@ export class GrpcWasmTransport implements RpcTransport {
 		const status = new Defer<RpcStatus>();
 		const trailer = new Defer<RpcMetadata>();
 
-		const ctrl = new RpcOutputStreamController<O>();
-
 		const req = method.I.toBinary(input, options.binaryOptions);
-		this.conn
-			.open_server_stream(this.full_method_of(method), req, {})
+		const stream = this.conn.open_server_stream(this.full_method_of(method), req, {});
+		const ostream = new RpcOutputStreamController<O>();
+
+		stream
 			.then(async (stream) => {
 				{
 					const h = await stream.header();
 					header.resolve(h as RpcMetadata);
 				}
 
-				while (true) {
-					const result = await stream.recv();
-					if (result.done) {
-						const st: RpcStatus = {
-							code: GrpcStatusCode[result.status.code],
-							detail: result.status.message,
-						};
-						status.resolve(st);
-						trailer.resolve(result.trailer as RpcMetadata);
-						break;
-					}
-
-					const res = method.O.fromBinary(result.response, options.binaryOptions);
-					if (ctrl.closed) {
-						return stream;
-					}
-					ctrl.notifyMessage(res);
+				const result = await stream_pipe(stream, ostream, (data) => {
+					return method.O.fromBinary(data, options.binaryOptions);
+				});
+				if (!result.done) {
+					return stream;
 				}
 
-				if (!ctrl.closed) {
-					ctrl.notifyComplete();
-				}
+				status.resolve({
+					code: GrpcStatusCode[result.status.code],
+					detail: result.status.message,
+				});
+				trailer.resolve(result.trailer as RpcMetadata);
+
+				ostream.notifyComplete();
 				return stream;
 			})
 			.then((stream) => {
 				stream.close();
 			})
 			.catch((e) => {
-				ctrl.notifyError(e);
+				header.reject(e);
+				status.reject(e);
+				trailer.reject(e);
+				ostream.notifyError(e);
 			});
 
 		return new ServerStreamingCall<I, O>(
@@ -145,7 +147,7 @@ export class GrpcWasmTransport implements RpcTransport {
 			options.meta ?? {},
 			input,
 			header,
-			ctrl,
+			ostream,
 			status,
 			trailer,
 		);
@@ -155,18 +157,117 @@ export class GrpcWasmTransport implements RpcTransport {
 		method: MethodInfo<I, O>,
 		options: RpcOptions,
 	): ClientStreamingCall<I, O> {
-		throw new Error("Method not implemented.");
+		const header = new Defer<RpcMetadata>();
+		const response = new Defer<O>();
+		const status = new Defer<RpcStatus>();
+		const trailer = new Defer<RpcMetadata>();
+
+		const stream = this.conn.open_bidi_stream(this.full_method_of(method), {});
+		const istream = new GrpcInputStreamWrapper<I>(
+			stream,
+			(m) => method.I.toBinary(m, options.binaryOptions),
+			async (stream) => {
+				const result = await stream_close_and_recv(stream);
+				const res = method.O.fromBinary(result.response, options.binaryOptions);
+				const st: RpcStatus = {
+					code: GrpcStatusCode[result.status.code],
+					detail: result.status.message,
+				};
+
+				response.resolve(res);
+				status.resolve(st);
+				trailer.resolve(result.trailer as RpcMetadata);
+			},
+		);
+
+		return new ClientStreamingCall<I, O>(
+			method,
+			options.meta ?? {},
+			istream,
+			header,
+			response,
+			status,
+			trailer,
+		);
 	}
 
 	duplex<I extends object, O extends object>(
 		method: MethodInfo<I, O>,
 		options: RpcOptions,
 	): DuplexStreamingCall<I, O> {
-		throw new Error("Method not implemented.");
+		const header = new Defer<RpcMetadata>();
+		const status = new Defer<RpcStatus>();
+		const trailer = new Defer<RpcMetadata>();
+
+		const stream = this.conn.open_bidi_stream(this.full_method_of(method), {});
+		const ostream = new RpcOutputStreamController<O>();
+		const istream = new GrpcInputStreamWrapper<I>(stream, (m) =>
+			method.I.toBinary(m, options.binaryOptions),
+		);
+
+		stream
+			.then(async (stream) => {
+				{
+					const h = await stream.header();
+					header.resolve(h as RpcMetadata);
+				}
+
+				const result = await stream_pipe(stream, ostream, (data) => {
+					return method.O.fromBinary(data, options.binaryOptions);
+				});
+				if (!result.done) {
+					return stream;
+				}
+
+				status.resolve({
+					code: GrpcStatusCode[result.status.code],
+					detail: result.status.message,
+				});
+				trailer.resolve(result.trailer as RpcMetadata);
+
+				ostream.notifyComplete();
+				return stream;
+			})
+			.then((stream) => {
+				stream.close();
+			})
+			.catch((e) => {
+				ostream.notifyError(e);
+			});
+
+		return new DuplexStreamingCall<I, O>(
+			method,
+			options.meta ?? {},
+			istream,
+			header,
+			ostream,
+			status,
+			trailer,
+		);
 	}
 
 	close() {
 		return this.conn.close();
+	}
+}
+
+class GrpcInputStreamWrapper<T> implements RpcInputStream<T> {
+	constructor(
+		private readonly stream: Promise<BidiStreamingClient>,
+		private encode: (m: T) => Uint8Array,
+		private on_complete?: (stream: BidiStreamingClient) => void,
+	) {}
+
+	async send(message: T): Promise<void> {
+		const data = this.encode(message);
+		const stream = await this.stream;
+		return stream.send(data);
+	}
+
+	async complete(): Promise<void> {
+		const stream = await this.stream;
+		this.on_complete?.(stream);
+		return stream.close_send();
 	}
 }
 
@@ -182,4 +283,24 @@ function normalize_meta(meta?: RpcMetadata): Metadata | undefined {
 	}
 
 	return normal;
+}
+
+// Returns `{done: false}` if ostream is closed.
+async function stream_pipe<O extends {}>(
+	istream: ServerStreamingClient,
+	ostream: RpcOutputStreamController<O>,
+	decode: (data: Uint8Array) => O,
+): Promise<StreamFinalResult | { done: false }> {
+	while (true) {
+		const result = await istream.recv();
+		if (ostream.closed) {
+			return { done: false };
+		}
+		if (result.done) {
+			return result;
+		}
+
+		const res = decode(result.response);
+		ostream.notifyMessage(res);
+	}
 }

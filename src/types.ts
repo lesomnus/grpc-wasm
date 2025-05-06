@@ -20,13 +20,14 @@ export type RpcResult = {
 	status: RpcStatus;
 };
 
-export type StreamResult =
-	| {
-			done: false;
-			response: Uint8Array;
-	  }
-	| {
-			done: true;
-			trailer: Metadata;
-			status: RpcStatus;
-	  };
+export type StreamDataResult = {
+	done: false;
+	response: Uint8Array;
+};
+export type StreamFinalResult = {
+	done: true;
+	status: RpcStatus;
+	trailer: Metadata;
+};
+
+export type StreamResult = StreamDataResult | StreamFinalResult;

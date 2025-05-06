@@ -12,7 +12,7 @@ Deploy your gRPC server as WebAssembly (WASM) and communicate with browser-side 
 - [x] Server streaming call
 - [x] Client streaming call
 - [x] Bi-directional streaming call
-- [ ] Support transport implementation for [timostamm/protobuf-ts](https://github.com/timostamm/protobuf-ts)
+- [x] Support transport implementation for [timostamm/protobuf-ts](https://github.com/timostamm/protobuf-ts)
 
 ## Usage
 
