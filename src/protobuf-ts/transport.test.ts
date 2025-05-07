@@ -149,7 +149,7 @@ describe("unary", () => {
 			assert.fail();
 		} catch (e) {
 			assert.instanceOf(e, RpcError);
-			expect(e.code).toBe(GrpcStatusCode[GrpcStatusCode.CANCELLED]);
+			expect(e.code).toBe(GrpcStatusCode[GrpcStatusCode.DEADLINE_EXCEEDED]);
 		}
 	});
 });
@@ -176,6 +176,40 @@ describe("server stream", () => {
 		expect(vs[0].sequence).toBe(0);
 		expect(vs[1].sequence).toBe(1);
 		expect(vs[2].sequence).toBe(2);
+	});
+	test("abort", async () => {
+		const ac = new AbortController();
+		const { responses, status } = client.many(
+			{
+				message: "",
+				overVoid: true,
+			},
+			{
+				abort: ac.signal,
+			},
+		);
+		responses.onMessage(() => assert.fail());
+		await sleep(10);
+
+		ac.abort();
+		const { code } = await status;
+		expect(code).toBe(GrpcStatusCode[GrpcStatusCode.CANCELLED]);
+	});
+	test("timeout", async () => {
+		const { responses, status } = client.many(
+			{
+				message: "",
+				overVoid: true,
+			},
+			{
+				timeout: 20,
+			},
+		);
+		responses.onMessage(() => assert.fail());
+		await sleep(10);
+
+		const { code } = await status;
+		expect(code).toBe(GrpcStatusCode[GrpcStatusCode.DEADLINE_EXCEEDED]);
 	});
 });
 
@@ -204,6 +238,38 @@ describe("client stream", () => {
 		expect(items[1].sequence).toBe(1);
 		expect(items[2].sequence).toBe(2);
 	});
+	test("abort", async () => {
+		const ac = new AbortController();
+		const { response } = client.buff({
+			abort: ac.signal,
+		});
+		response.then(() => assert.fail()).catch(() => {});
+		await sleep(10);
+
+		ac.abort();
+		try {
+			await response;
+			assert.fail();
+		} catch (e) {
+			assert.instanceOf(e, RpcError);
+			expect(e.code).toBe(GrpcStatusCode[GrpcStatusCode.CANCELLED]);
+		}
+	});
+	test("timeout", async () => {
+		const { response } = client.buff({
+			timeout: 20,
+		});
+		response.then(() => assert.fail()).catch(() => {});
+		await sleep(10);
+
+		try {
+			await response;
+			assert.fail();
+		} catch (e) {
+			assert.instanceOf(e, RpcError);
+			expect(e.code).toBe(GrpcStatusCode[GrpcStatusCode.DEADLINE_EXCEEDED]);
+		}
+	});
 });
 
 describe("bidi stream", () => {
@@ -229,5 +295,27 @@ describe("bidi stream", () => {
 		expect(vs[0].sequence).toBe(0);
 		expect(vs[1].sequence).toBe(1);
 		expect(vs[2].sequence).toBe(2);
+	});
+	test("abort", async () => {
+		const ac = new AbortController();
+		const { responses, status } = client.live({
+			abort: ac.signal,
+		});
+		responses.onMessage(() => assert.fail());
+		await sleep(10);
+
+		ac.abort();
+		const { code } = await status;
+		expect(code).toBe(GrpcStatusCode[GrpcStatusCode.CANCELLED]);
+	});
+	test("timeout", async () => {
+		const { responses, status } = client.live({
+			timeout: 20,
+		});
+		responses.onMessage(() => assert.fail());
+		await sleep(10);
+
+		const { code } = await status;
+		expect(code).toBe(GrpcStatusCode[GrpcStatusCode.DEADLINE_EXCEEDED]);
 	});
 });

@@ -81,6 +81,11 @@ func (EchoServer) many(seq *uint32, req *EchoRequest, h func(res *EchoResponse) 
 }
 
 func (s EchoServer) Many(req *EchoRequest, stream grpc.ServerStreamingServer[EchoResponse]) error {
+	if req.GetOverVoid() {
+		<-stream.Context().Done()
+		return stream.Context().Err()
+	}
+
 	seq := uint32(0)
 	return s.many(&seq, req, stream.Send)
 }

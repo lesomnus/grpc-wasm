@@ -49,8 +49,25 @@ export class BidiStream implements BidiStreamingClient {
 		return this.worker.stream_close_send(this.id);
 	}
 
-	close_and_recv(): Promise<RpcResult> {
-		return stream_close_and_recv(this);
+	async close_and_recv(): Promise<RpcResult> {
+		await this.close_send();
+
+		const result1 = await this.recv();
+		if (result1.done) {
+			throw new Error("server did not send a response");
+		}
+
+		const result2 = await this.recv();
+		if (!result2.done) {
+			throw new Error("server responded twice for client stream");
+		}
+
+		return {
+			header: await this.header(),
+			response: result1.response,
+			status: result2.status,
+			trailer: result2.trailer,
+		};
 	}
 
 	close(): Promise<void> {
@@ -67,25 +84,4 @@ export class BidiStream implements BidiStreamingClient {
 			throw new Error("closed");
 		}
 	}
-}
-
-export async function stream_close_and_recv(stream: BidiStreamingClient): Promise<RpcResult> {
-	await stream.close_send();
-
-	const result1 = await stream.recv();
-	if (result1.done) {
-		throw new Error("server did not send a response");
-	}
-
-	const result2 = await stream.recv();
-	if (!result2.done) {
-		throw new Error("server responded twice for client stream");
-	}
-
-	return {
-		header: await stream.header(),
-		response: result1.response,
-		status: result2.status,
-		trailer: result2.trailer,
-	};
 }

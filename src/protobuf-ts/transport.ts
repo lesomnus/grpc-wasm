@@ -17,11 +17,7 @@ import {
 
 import type { Conn } from "../conn";
 import { Defer } from "../defer";
-import {
-	type BidiStreamingClient,
-	type ServerStreamingClient,
-	stream_close_and_recv,
-} from "../stream";
+import type { BidiStreamingClient, ClientStreamingClient, ServerStreamingClient } from "../stream";
 import type { Metadata, StreamFinalResult } from "../types";
 
 import type { GrpcWasmOptions } from "./options";
@@ -46,22 +42,31 @@ export class GrpcWasmTransport implements RpcTransport {
 		input: I,
 		options: RpcOptions,
 	): UnaryCall<I, O> {
-		const [signal, cause] = normalize_abort(options);
-		if (!signal && cause.code != GrpcStatusCode.OK) {
-			// TODO: should the Promise be resolved instead of rejected?
-			const err = Promise.reject(
-				new RpcError(
-					"call was not made because the option had already indicated a failure",
-					GrpcStatusCode[cause.code],
-				),
-			);
-			return new UnaryCall<I, O>(method, options.meta ?? {}, input, err, err, err, err);
+		const meta = options.meta ?? {};
+		const [signal, cause, err] = normalize_abort(options);
+		if (err) {
+			const e = Promise.reject(err);
+			return new UnaryCall<I, O>(method, meta, input, e, e, Promise.resolve(cause), e);
 		}
 
 		const header = new Defer<RpcMetadata>();
 		const response = new Defer<O>();
 		const status = new Defer<RpcStatus>();
 		const trailer = new Defer<RpcMetadata>();
+
+		header.catch(() => {});
+		response.catch(() => {});
+		status.catch(() => {});
+		trailer.catch(() => {});
+
+		signal?.addEventListener("abort", async () => {
+			const st = await cause;
+			const err = new RpcError("", st.code);
+			header.reject(err);
+			response.reject(err);
+			status.resolve(st);
+			trailer.reject(err);
+		});
 
 		const req = method.I.toBinary(input, options.binaryOptions);
 		this.conn
@@ -95,31 +100,49 @@ export class GrpcWasmTransport implements RpcTransport {
 				trailer.reject(e);
 			});
 
-		return new UnaryCall<I, O>(
-			method,
-			options.meta ?? {},
-			input,
-			header,
-			response,
-			status,
-			trailer,
-		);
+		return new UnaryCall<I, O>(method, meta, input, header, response, status, trailer);
 	}
-
-	// private handle_server_stream/
 
 	serverStreaming<I extends object, O extends object>(
 		method: MethodInfo<I, O>,
 		input: I,
 		options: RpcOptions,
 	): ServerStreamingCall<I, O> {
+		const meta = options.meta ?? {};
+		const [signal, cause, err] = normalize_abort(options);
+		if (err) {
+			const e = Promise.reject(err);
+			const o = new RpcOutputStreamController<O>();
+			o.notifyError(err);
+			return new ServerStreamingCall<I, O>(method, meta, input, e, o, Promise.resolve(cause), e);
+		}
+
 		const header = new Defer<RpcMetadata>();
 		const status = new Defer<RpcStatus>();
 		const trailer = new Defer<RpcMetadata>();
 
+		header.catch(() => {});
+		status.catch(() => {});
+		trailer.catch(() => {});
+
 		const req = method.I.toBinary(input, options.binaryOptions);
 		const stream = this.conn.open_server_stream(this.full_method_of(method), req, {});
 		const ostream = new RpcOutputStreamController<O>();
+		const ostream_set_error = (err: Error) => {
+			if (ostream.closed) return;
+			ostream.notifyError(err);
+		};
+
+		signal?.addEventListener("abort", async () => {
+			const st = await cause;
+			const err = new RpcError("", st.code);
+			header.reject(err);
+			status.resolve(st);
+			trailer.reject(err);
+			(await stream).close();
+
+			ostream_set_error(err);
+		});
 
 		stream
 			.then(async (stream) => {
@@ -151,35 +174,40 @@ export class GrpcWasmTransport implements RpcTransport {
 				header.reject(e);
 				status.reject(e);
 				trailer.reject(e);
-				ostream.notifyError(e);
+				ostream_set_error(e);
 			});
 
-		return new ServerStreamingCall<I, O>(
-			method,
-			options.meta ?? {},
-			input,
-			header,
-			ostream,
-			status,
-			trailer,
-		);
+		return new ServerStreamingCall<I, O>(method, meta, input, header, ostream, status, trailer);
 	}
 
 	clientStreaming<I extends object, O extends object>(
 		method: MethodInfo<I, O>,
 		options: RpcOptions,
 	): ClientStreamingCall<I, O> {
+		const meta = options.meta ?? {};
+		const [signal, cause, err] = normalize_abort(options);
+		if (err) {
+			const e = Promise.reject(err);
+			const i = new GrpcErrInputStream<I>(err);
+			return new ClientStreamingCall<I, O>(method, meta, i, e, e, Promise.resolve(cause), e);
+		}
+
 		const header = new Defer<RpcMetadata>();
 		const response = new Defer<O>();
 		const status = new Defer<RpcStatus>();
 		const trailer = new Defer<RpcMetadata>();
 
-		const stream = this.conn.open_bidi_stream(this.full_method_of(method), {});
-		const istream = new GrpcInputStreamWrapper<I>(
+		header.catch(() => {});
+		response.catch(() => {});
+		status.catch(() => {});
+		trailer.catch(() => {});
+
+		const stream = this.conn.open_client_stream(this.full_method_of(method), {});
+		const istream = new GrpcInputStreamWrapper<I, ClientStreamingClient>(
 			stream,
 			(m) => method.I.toBinary(m, options.binaryOptions),
 			async (stream) => {
-				const result = await stream_close_and_recv(stream);
+				const result = await stream.close_and_recv();
 				const res = method.O.fromBinary(result.response, options.binaryOptions);
 				const st: RpcStatus = {
 					code: GrpcStatusCode[result.status.code],
@@ -192,30 +220,63 @@ export class GrpcWasmTransport implements RpcTransport {
 			},
 		);
 
-		return new ClientStreamingCall<I, O>(
-			method,
-			options.meta ?? {},
-			istream,
-			header,
-			response,
-			status,
-			trailer,
-		);
+		signal?.addEventListener("abort", async () => {
+			const st = await cause;
+			const err = new RpcError("abort", st.code);
+			header.reject(err);
+			response.reject(err);
+			status.resolve(st);
+			trailer.reject(err);
+			(await stream).close();
+		});
+
+		return new ClientStreamingCall<I, O>(method, meta, istream, header, response, status, trailer);
 	}
 
 	duplex<I extends object, O extends object>(
 		method: MethodInfo<I, O>,
 		options: RpcOptions,
 	): DuplexStreamingCall<I, O> {
+		const meta = options.meta ?? {};
+		const [signal, cause, err] = normalize_abort(options);
+		if (err) {
+			const e = Promise.reject(err);
+			const i = new GrpcErrInputStream<I>(err);
+			const o = new RpcOutputStreamController<O>();
+			o.notifyError(err);
+			return new DuplexStreamingCall<I, O>(method, meta, i, e, o, Promise.resolve(cause), e);
+		}
+
 		const header = new Defer<RpcMetadata>();
 		const status = new Defer<RpcStatus>();
 		const trailer = new Defer<RpcMetadata>();
 
+		header.catch(() => {});
+		status.catch(() => {});
+		trailer.catch(() => {});
+
 		const stream = this.conn.open_bidi_stream(this.full_method_of(method), {});
 		const ostream = new RpcOutputStreamController<O>();
-		const istream = new GrpcInputStreamWrapper<I>(stream, (m) =>
-			method.I.toBinary(m, options.binaryOptions),
+		const istream = new GrpcInputStreamWrapper<I, BidiStreamingClient>(
+			stream,
+			(m) => method.I.toBinary(m, options.binaryOptions),
+			(stream) => stream.close_send(),
 		);
+		const ostream_set_error = (err: Error) => {
+			if (ostream.closed) return;
+			ostream.notifyError(err);
+		};
+
+		signal?.addEventListener("abort", async () => {
+			const st = await cause;
+			const err = new RpcError("", st.code);
+			header.reject(err);
+			status.resolve(st);
+			trailer.reject(err);
+			(await stream).close();
+
+			ostream_set_error(err);
+		});
 
 		stream
 			.then(async (stream) => {
@@ -244,18 +305,13 @@ export class GrpcWasmTransport implements RpcTransport {
 				stream.close();
 			})
 			.catch((e) => {
-				ostream.notifyError(e);
+				header.reject(e);
+				status.reject(e);
+				trailer.reject(e);
+				ostream_set_error(e);
 			});
 
-		return new DuplexStreamingCall<I, O>(
-			method,
-			options.meta ?? {},
-			istream,
-			header,
-			ostream,
-			status,
-			trailer,
-		);
+		return new DuplexStreamingCall<I, O>(method, meta, istream, header, ostream, status, trailer);
 	}
 
 	close() {
@@ -263,11 +319,15 @@ export class GrpcWasmTransport implements RpcTransport {
 	}
 }
 
-class GrpcInputStreamWrapper<T> implements RpcInputStream<T> {
+type GrpcInputStream = {
+	send(req: Uint8Array): Promise<void>;
+};
+
+class GrpcInputStreamWrapper<T, S extends GrpcInputStream> implements RpcInputStream<T> {
 	constructor(
-		private readonly stream: Promise<BidiStreamingClient>,
+		private readonly stream: Promise<S>,
 		private encode: (m: T) => Uint8Array,
-		private on_complete?: (stream: BidiStreamingClient) => void,
+		private on_complete: (stream: S) => Promise<void>,
 	) {}
 
 	async send(message: T): Promise<void> {
@@ -278,8 +338,19 @@ class GrpcInputStreamWrapper<T> implements RpcInputStream<T> {
 
 	async complete(): Promise<void> {
 		const stream = await this.stream;
-		this.on_complete?.(stream);
-		return stream.close_send();
+		return this.on_complete(stream);
+	}
+}
+
+class GrpcErrInputStream<T> implements RpcInputStream<T> {
+	constructor(private err: Error) {}
+
+	send(message: T): Promise<void> {
+		return Promise.reject(this.err);
+	}
+
+	complete(): Promise<void> {
+		return Promise.resolve();
 	}
 }
 
@@ -297,15 +368,23 @@ function normalize_meta(meta?: RpcMetadata): Metadata | undefined {
 	return normal;
 }
 
-type AbortCode = GrpcStatusCode.OK | GrpcStatusCode.CANCELLED | GrpcStatusCode.DEADLINE_EXCEEDED;
-type AbortResult = [AbortSignal, { code: Promise<AbortCode> }] | [undefined, { code: AbortCode }];
+type AbortResult =
+	// The request can be aborted, so respect the signal and await the code if necessary.
+	| [AbortSignal, Promise<RpcStatus>, null]
+	// The request can never be aborted.
+	| [undefined, RpcStatus, null]
+	// The request should not be made because the options already indicate failure.
+	| [undefined, RpcStatus, RpcError];
 
 function normalize_abort(options: Pick<RpcOptions, "timeout" | "abort">): AbortResult {
 	if (options.abort === undefined && options.timeout === undefined) {
-		return [undefined, { code: GrpcStatusCode.OK }];
+		return [undefined, { code: GrpcStatusCode[GrpcStatusCode.OK], detail: "" }, null];
 	}
+
+	const err_msg = "call was not made because the option had already indicated a failure";
 	if (options.abort?.aborted) {
-		return [undefined, { code: GrpcStatusCode.CANCELLED }];
+		const code = GrpcStatusCode[GrpcStatusCode.CANCELLED];
+		return [undefined, { code, detail: "" }, new RpcError(err_msg, code)];
 	}
 
 	let timeout = options.timeout;
@@ -314,13 +393,14 @@ function normalize_abort(options: Pick<RpcOptions, "timeout" | "abort">): AbortR
 			timeout = timeout.getTime() - Date.now();
 		}
 		if (timeout <= 0) {
-			return [undefined, { code: GrpcStatusCode.DEADLINE_EXCEEDED }];
+			const code = GrpcStatusCode[GrpcStatusCode.DEADLINE_EXCEEDED];
+			return [undefined, { code, detail: "" }, new RpcError(err_msg, code)];
 		}
 	}
 
-	const code = new Defer<AbortCode>();
+	const code = new Defer<GrpcStatusCode>();
 	const ac = new AbortController();
-	const abort = (c: AbortCode) => {
+	const abort = (c: GrpcStatusCode) => {
 		ac.abort();
 		code.resolve(c);
 	};
@@ -336,7 +416,13 @@ function normalize_abort(options: Pick<RpcOptions, "timeout" | "abort">): AbortR
 		}, timeout);
 	}
 
-	return [ac.signal, { code }];
+	return [
+		ac.signal,
+		code.then<RpcStatus>((c) => {
+			return { code: GrpcStatusCode[c], detail: "" };
+		}),
+		null,
+	];
 }
 
 // Returns `{done: false}` if ostream is closed.
