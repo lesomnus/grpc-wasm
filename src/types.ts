@@ -13,6 +13,10 @@ export type CallOption = {
 	meta?: Metadata;
 };
 
+export type InvokeOption = CallOption & {
+	signal?: AbortSignal;
+};
+
 export type RpcResult = {
 	header: Metadata;
 	trailer: Metadata;

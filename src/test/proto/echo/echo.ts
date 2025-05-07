@@ -42,6 +42,12 @@ export interface EchoRequest {
      */
     repeat?: number;
     /**
+     * Server does not response if this is true.
+     *
+     * @generated from protobuf field: optional bool over_void = 6;
+     */
+    overVoid?: boolean;
+    /**
      * @generated from protobuf field: google.protobuf.Timestamp date_created = 15;
      */
     dateCreated?: Timestamp;
@@ -93,6 +99,7 @@ class EchoRequest$Type extends MessageType<EchoRequest> {
             { no: 2, name: "message", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "circular_shift", kind: "scalar", opt: true, T: 5 /*ScalarType.INT32*/ },
             { no: 5, name: "repeat", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
+            { no: 6, name: "over_void", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
             { no: 15, name: "date_created", kind: "message", T: () => Timestamp }
         ]);
     }
@@ -119,6 +126,9 @@ class EchoRequest$Type extends MessageType<EchoRequest> {
                     break;
                 case /* optional uint32 repeat */ 5:
                     message.repeat = reader.uint32();
+                    break;
+                case /* optional bool over_void */ 6:
+                    message.overVoid = reader.bool();
                     break;
                 case /* google.protobuf.Timestamp date_created */ 15:
                     message.dateCreated = Timestamp.internalBinaryRead(reader, reader.uint32(), options, message.dateCreated);
@@ -147,6 +157,9 @@ class EchoRequest$Type extends MessageType<EchoRequest> {
         /* optional uint32 repeat = 5; */
         if (message.repeat !== undefined)
             writer.tag(5, WireType.Varint).uint32(message.repeat);
+        /* optional bool over_void = 6; */
+        if (message.overVoid !== undefined)
+            writer.tag(6, WireType.Varint).bool(message.overVoid);
         /* google.protobuf.Timestamp date_created = 15; */
         if (message.dateCreated)
             Timestamp.internalBinaryWrite(message.dateCreated, writer.tag(15, WireType.LengthDelimited).fork(), options).join();

@@ -1,8 +1,8 @@
 import { GrpcStatusCode } from "@protobuf-ts/grpcweb-transport";
 import type { MessageType } from "@protobuf-ts/runtime";
-import { beforeEach, describe, expect, test } from "vitest";
+import { assert, beforeEach, describe, expect, test } from "vitest";
 
-import { type CallOption, type Conn, open } from "./index";
+import { type CallOption, type Conn, type InvokeOption, open } from "./index";
 
 import { EchoRequest, EchoResponse } from "./test/proto/echo/echo";
 import { Timestamp } from "./test/proto/google/protobuf/timestamp";
@@ -25,7 +25,7 @@ describe("conn", () => {
 		i: MessageType<I>,
 		o: MessageType<O>,
 		m: I,
-		option: CallOption,
+		option: InvokeOption,
 	) => {
 		const req = i.toBinary(m);
 		const rst = await conn.invoke(`/echo.EchoService/${method}`, req, option);
@@ -35,7 +35,7 @@ describe("conn", () => {
 			response,
 		};
 	};
-	const invokeOnce = (m: EchoRequest, option: CallOption) =>
+	const invokeOnce = (m: EchoRequest, option: InvokeOption) =>
 		invoke("Once", EchoRequest, EchoResponse, m, option);
 
 	test("unary", async () => {
@@ -51,6 +51,20 @@ describe("conn", () => {
 		expect(Timestamp.toDate(res.dateCreated!).getTime()).toBeGreaterThan(
 			Timestamp.toDate(req.dateCreated!).getTime(),
 		);
+	});
+	test("unary cancel", async () => {
+		const req: EchoRequest = {
+			message: "Lebowski",
+			overVoid: true,
+		};
+
+		const ac = new AbortController();
+		const p = invokeOnce(req, { signal: ac.signal });
+		await new Promise<void>((resolve) => setTimeout(() => resolve(), 10));
+
+		ac.abort();
+		const { status } = await p;
+		expect(status.code).toBe(GrpcStatusCode.CANCELLED);
 	});
 	test("unary with error", async () => {
 		const req: EchoRequest = {

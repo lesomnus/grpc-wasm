@@ -22,8 +22,8 @@ import {
 	type ServerStreamingClient,
 	stream_close_and_recv,
 } from "../stream";
-
 import type { Metadata, StreamFinalResult } from "../types";
+
 import type { GrpcWasmOptions } from "./options";
 
 export class GrpcWasmTransport implements RpcTransport {
@@ -46,6 +46,18 @@ export class GrpcWasmTransport implements RpcTransport {
 		input: I,
 		options: RpcOptions,
 	): UnaryCall<I, O> {
+		const [signal, cause] = normalize_abort(options);
+		if (!signal && cause.code != GrpcStatusCode.OK) {
+			// TODO: should the Promise be resolved instead of rejected?
+			const err = Promise.reject(
+				new RpcError(
+					"call was not made because the option had already indicated a failure",
+					GrpcStatusCode[cause.code],
+				),
+			);
+			return new UnaryCall<I, O>(method, options.meta ?? {}, input, err, err, err, err);
+		}
+
 		const header = new Defer<RpcMetadata>();
 		const response = new Defer<O>();
 		const status = new Defer<RpcStatus>();
@@ -53,7 +65,7 @@ export class GrpcWasmTransport implements RpcTransport {
 
 		const req = method.I.toBinary(input, options.binaryOptions);
 		this.conn
-			.invoke(this.full_method_of(method), req, { meta: normalize_meta(options.meta) })
+			.invoke(this.full_method_of(method), req, { meta: normalize_meta(options.meta), signal })
 			.then((result) => {
 				const st: RpcStatus = {
 					code: GrpcStatusCode[result.status.code],
@@ -283,6 +295,48 @@ function normalize_meta(meta?: RpcMetadata): Metadata | undefined {
 	}
 
 	return normal;
+}
+
+type AbortCode = GrpcStatusCode.OK | GrpcStatusCode.CANCELLED | GrpcStatusCode.DEADLINE_EXCEEDED;
+type AbortResult = [AbortSignal, { code: Promise<AbortCode> }] | [undefined, { code: AbortCode }];
+
+function normalize_abort(options: Pick<RpcOptions, "timeout" | "abort">): AbortResult {
+	if (options.abort === undefined && options.timeout === undefined) {
+		return [undefined, { code: GrpcStatusCode.OK }];
+	}
+	if (options.abort?.aborted) {
+		return [undefined, { code: GrpcStatusCode.CANCELLED }];
+	}
+
+	let timeout = options.timeout;
+	if (timeout !== undefined) {
+		if (typeof timeout !== "number") {
+			timeout = timeout.getTime() - Date.now();
+		}
+		if (timeout <= 0) {
+			return [undefined, { code: GrpcStatusCode.DEADLINE_EXCEEDED }];
+		}
+	}
+
+	const code = new Defer<AbortCode>();
+	const ac = new AbortController();
+	const abort = (c: AbortCode) => {
+		ac.abort();
+		code.resolve(c);
+	};
+
+	if (options.abort !== undefined) {
+		options.abort.addEventListener("abort", () => {
+			abort(GrpcStatusCode.CANCELLED);
+		});
+	}
+	if (timeout !== undefined) {
+		setTimeout(() => {
+			abort(GrpcStatusCode.DEADLINE_EXCEEDED);
+		}, timeout);
+	}
+
+	return [ac.signal, { code }];
 }
 
 // Returns `{done: false}` if ostream is closed.

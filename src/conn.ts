@@ -4,12 +4,12 @@ import {
 	type ClientStreamingClient,
 	type ServerStreamingClient,
 } from "./stream";
-import type { CallOption, RpcResult } from "./types";
+import type { CallOption, InvokeOption, RpcResult } from "./types";
 import type { BridgeWorker, ConnId } from "./worker";
 
 export interface Conn {
 	close(): Promise<void>;
-	invoke(method: string, req: Uint8Array, option: CallOption): Promise<RpcResult>;
+	invoke(method: string, req: Uint8Array, option: InvokeOption): Promise<RpcResult>;
 	open_server_stream(
 		method: string,
 		req: Uint8Array,
@@ -36,9 +36,27 @@ export class ClientConn implements Conn {
 		return this.close_work;
 	}
 
-	async invoke(method: string, req: Uint8Array, option: CallOption): Promise<RpcResult> {
+	async invoke(method: string, req: Uint8Array, option: InvokeOption): Promise<RpcResult> {
 		this.throwIfClosed();
-		return this.worker.invoke(this.id, method, req, option);
+
+		const id = await this.worker.invoke(this.id, method, req, {
+			meta: option.meta,
+		});
+
+		// `recv` must be called before `cancel`
+		// since `cancel` deletes the handle.
+		const result = this.worker.recv(id);
+
+		if (option.signal) {
+			if (option.signal.aborted) {
+				this.worker.cancel(id);
+			} else {
+				option.signal.addEventListener("abort", () => {
+					this.worker.cancel(id);
+				});
+			}
+		}
+		return result;
 	}
 
 	async open_server_stream(
@@ -47,6 +65,7 @@ export class ClientConn implements Conn {
 		option: CallOption,
 	): Promise<ServerStreamingClient> {
 		this.throwIfClosed();
+
 		const stream_id = await this.worker.open_server_stream(this.id, method, option);
 		const stream = new BidiStream(this.worker, stream_id);
 		await stream.send(req);
@@ -56,12 +75,14 @@ export class ClientConn implements Conn {
 
 	async open_client_stream(method: string, option: CallOption): Promise<ClientStreamingClient> {
 		this.throwIfClosed();
+
 		const stream_id = await this.worker.open_client_stream(this.id, method, option);
 		return new BidiStream(this.worker, stream_id);
 	}
 
 	async open_bidi_stream(method: string, option: CallOption): Promise<BidiStreamingClient> {
 		this.throwIfClosed();
+
 		const stream_id = await this.worker.open_bidi_stream(this.id, method, option);
 		return new BidiStream(this.worker, stream_id);
 	}

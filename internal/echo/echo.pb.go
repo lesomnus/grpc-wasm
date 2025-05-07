@@ -27,6 +27,7 @@ type EchoRequest struct {
 	xxx_hidden_Message       string                 `protobuf:"bytes,2,opt,name=message,proto3"`
 	xxx_hidden_CircularShift int32                  `protobuf:"varint,4,opt,name=circular_shift,json=circularShift,proto3,oneof"`
 	xxx_hidden_Repeat        uint32                 `protobuf:"varint,5,opt,name=repeat,proto3,oneof"`
+	xxx_hidden_OverVoid      bool                   `protobuf:"varint,6,opt,name=over_void,json=overVoid,proto3,oneof"`
 	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated,proto3"`
 	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
 	XXX_presence             [1]uint32
@@ -87,6 +88,13 @@ func (x *EchoRequest) GetRepeat() uint32 {
 	return 0
 }
 
+func (x *EchoRequest) GetOverVoid() bool {
+	if x != nil {
+		return x.xxx_hidden_OverVoid
+	}
+	return false
+}
+
 func (x *EchoRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -104,12 +112,17 @@ func (x *EchoRequest) SetMessage(v string) {
 
 func (x *EchoRequest) SetCircularShift(v int32) {
 	x.xxx_hidden_CircularShift = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
 }
 
 func (x *EchoRequest) SetRepeat(v uint32) {
 	x.xxx_hidden_Repeat = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+}
+
+func (x *EchoRequest) SetOverVoid(v bool) {
+	x.xxx_hidden_OverVoid = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
 }
 
 func (x *EchoRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -137,6 +150,13 @@ func (x *EchoRequest) HasRepeat() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *EchoRequest) HasOverVoid() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
 func (x *EchoRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -158,6 +178,11 @@ func (x *EchoRequest) ClearRepeat() {
 	x.xxx_hidden_Repeat = 0
 }
 
+func (x *EchoRequest) ClearOverVoid() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_OverVoid = false
+}
+
 func (x *EchoRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
@@ -174,7 +199,9 @@ type EchoRequest_builder struct {
 	CircularShift *int32
 	// Server should respond with this number of EchoResponse.
 	// This effect only with stream method.
-	Repeat      *uint32
+	Repeat *uint32
+	// Server does not response if this is true.
+	OverVoid    *bool
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -185,12 +212,16 @@ func (b0 EchoRequest_builder) Build() *EchoRequest {
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Message = b.Message
 	if b.CircularShift != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
 		x.xxx_hidden_CircularShift = *b.CircularShift
 	}
 	if b.Repeat != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
 		x.xxx_hidden_Repeat = *b.Repeat
+	}
+	if b.OverVoid != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
+		x.xxx_hidden_OverVoid = *b.OverVoid
 	}
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
@@ -426,15 +457,18 @@ var File_echo_echo_proto protoreflect.FileDescriptor
 
 const file_echo_echo_proto_rawDesc = "" +
 	"\n" +
-	"\x0fecho/echo.proto\x12\x04echo\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf3\x01\n" +
+	"\x0fecho/echo.proto\x12\x04echo\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa3\x02\n" +
 	"\vEchoRequest\x12$\n" +
 	"\x06status\x18\x01 \x01(\v2\f.echo.StatusR\x06status\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12*\n" +
 	"\x0ecircular_shift\x18\x04 \x01(\x05H\x00R\rcircularShift\x88\x01\x01\x12\x1b\n" +
-	"\x06repeat\x18\x05 \x01(\rH\x01R\x06repeat\x88\x01\x01\x12=\n" +
+	"\x06repeat\x18\x05 \x01(\rH\x01R\x06repeat\x88\x01\x01\x12 \n" +
+	"\tover_void\x18\x06 \x01(\bH\x02R\boverVoid\x88\x01\x01\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreatedB\x11\n" +
 	"\x0f_circular_shiftB\t\n" +
-	"\a_repeat\"\x83\x01\n" +
+	"\a_repeatB\f\n" +
+	"\n" +
+	"_over_void\"\x83\x01\n" +
 	"\fEchoResponse\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1a\n" +
 	"\bsequence\x18\x03 \x01(\rR\bsequence\x12=\n" +

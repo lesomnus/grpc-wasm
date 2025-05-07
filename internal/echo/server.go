@@ -41,6 +41,10 @@ func (EchoServer) Once(ctx context.Context, req *EchoRequest) (*EchoResponse, er
 	if err := req.Error(); err != nil {
 		return nil, err
 	}
+	if req.GetOverVoid() {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}
 
 	v := req.GetMessage()
 	v = circularShift(v, int(req.GetCircularShift()))

@@ -4,6 +4,7 @@ import { assert, beforeEach, describe, expect, test } from "vitest";
 import { type Conn, open } from "./index";
 
 import { EchoBatchResponse, EchoRequest, EchoResponse } from "./test/proto/echo/echo";
+import { sleep } from "./test/util";
 
 describe("server stream", () => {
 	let conn: Conn;
@@ -285,11 +286,3 @@ describe("bidi stream", () => {
 		});
 	});
 });
-
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => {
-		setTimeout(() => {
-			resolve();
-		}, ms);
-	});
-}

@@ -1,3 +1,4 @@
 node_modules
 /src/test/echobridge.wasm
 /dist
+/grpc-wasm*.tgz

@@ -28,6 +28,9 @@ message EchoRequest {
 	// This effect only with stream method.
 	optional uint32 repeat = 5;
 
+	// Server does not response if this is true.
+	optional bool over_void = 6;
+
 	google.protobuf.Timestamp date_created = 15;
 }
 

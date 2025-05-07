@@ -21,27 +21,27 @@ func NewScope() *Scope {
 	return &Scope{}
 }
 
-func (b *Scope) Wait() {
-	b.wg.Wait()
+func (s *Scope) Wait() {
+	s.wg.Wait()
 }
 
-func (b *Scope) FuncOf(f func(this js.Value, args []js.Value) any) js.Func {
+func (s *Scope) FuncOf(f func(this js.Value, args []js.Value) any) js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) any {
-		b.wg.Add(1)
-		defer b.wg.Done()
+		s.wg.Add(1)
+		defer s.wg.Done()
 
 		return f(this, args)
 	})
 }
 
-func (b *Scope) Promise(f func() (js.Value, js.Value)) js.Value {
-	b.wg.Add(1)
+func (s *Scope) Promise(f func() (js.Value, js.Value)) js.Value {
 	return js.Global().Get("Promise").New(js.FuncOf(func(this js.Value, args []js.Value) any {
+		s.wg.Add(1)
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			defer b.wg.Done()
+			defer s.wg.Done()
 
 			v, err := f()
 			if !err.IsUndefined() {
@@ -54,9 +54,9 @@ func (b *Scope) Promise(f func() (js.Value, js.Value)) js.Value {
 	}))
 }
 
-func (b *Scope) Await(p js.Value) (js.Value, js.Value) {
-	b.wg.Add(1)
-	defer b.wg.Done()
+func (s *Scope) Await(p js.Value) (js.Value, js.Value) {
+	s.wg.Add(1)
+	defer s.wg.Done()
 
 	c := make(chan js.Value)
 	caught := false

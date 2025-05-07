@@ -12,12 +12,10 @@
 	"exports": {
 		".": {
 			"import": "./dist/index.es.js",
-			"require": "./dist/index.cjs.js",
 			"types": "./dist/index.d.ts"
 		},
 		"./protobuf-ts": {
 			"import": "./dist/protobuf-ts.es.js",
-			"require": "./dist/protobuf-ts.cjs.js",
 			"types": "./dist/protobuf-ts/index.d.ts"
 		}
 	},

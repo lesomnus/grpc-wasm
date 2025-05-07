@@ -7,6 +7,7 @@ import { GrpcWasmTransport } from "./transport";
 import { open } from "../index";
 import type { EchoResponse } from "../test/proto/echo/echo";
 import { EchoServiceClient } from "../test/proto/echo/echo.client";
+import { sleep } from "../test/util";
 
 async function make_transport() {
 	const p = new URL("../test/echobridge.wasm", import.meta.url);
@@ -105,6 +106,50 @@ describe("unary", () => {
 			assert.instanceOf(e, RpcError);
 			expect(e.code).toBe(GrpcStatusCode[GrpcStatusCode.FAILED_PRECONDITION]);
 			expect(e.message).toBe("Is this your homework, Larry?");
+		}
+	});
+	test("abort", async () => {
+		const ac = new AbortController();
+		const p = client.once(
+			{
+				message: "",
+				overVoid: true,
+			},
+			{
+				abort: ac.signal,
+			},
+		);
+		p.then(() => assert.fail()).catch(() => {});
+		await sleep(10);
+
+		ac.abort();
+		try {
+			await p.response;
+			assert.fail();
+		} catch (e) {
+			assert.instanceOf(e, RpcError);
+			expect(e.code).toBe(GrpcStatusCode[GrpcStatusCode.CANCELLED]);
+		}
+	});
+	test("timeout", async () => {
+		const p = client.once(
+			{
+				message: "",
+				overVoid: true,
+			},
+			{
+				timeout: 20,
+			},
+		);
+		p.then(() => assert.fail()).catch(() => {});
+		await sleep(10);
+
+		try {
+			await p.response;
+			assert.fail();
+		} catch (e) {
+			assert.instanceOf(e, RpcError);
+			expect(e.code).toBe(GrpcStatusCode[GrpcStatusCode.CANCELLED]);
 		}
 	});
 });

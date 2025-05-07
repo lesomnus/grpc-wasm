@@ -17,7 +17,7 @@ export default defineConfig({
 				worker: resolve(__dirname, "src/worker.ts"),
 				"protobuf-ts": resolve(__dirname, "src/protobuf-ts/index.ts"),
 			},
-			formats: ["es", "cjs"],
+			formats: ["es"],
 			fileName: (format, entryName) => `${entryName}.${format}.js`,
 		},
 		rollupOptions: {
@@ -27,6 +27,7 @@ export default defineConfig({
 	plugins: [
 		dts({
 			tsconfigPath: "./tsconfig.app.json",
+			exclude: ["src/**/*.test.ts", "src/test/**"],
 		}),
 	],
 	test: {},

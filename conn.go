@@ -38,6 +38,10 @@ func (c *Conn) JsClose(this js.Value, args []js.Value) any {
 //	type Metadata = {
 //		[key: string]: string[] | undefined
 //	};
+//	type Option = {
+//		meta?: Metadata
+//		abort_request?: Promise<void>
+//	}
 //	type RpcStatus = {
 //		code: number
 //		message: string
@@ -48,7 +52,7 @@ func (c *Conn) JsClose(this js.Value, args []js.Value) any {
 //		response: Uint8Array
 //		status: RpcStatus
 //	};
-//	function(method: string, req: Uint8Array, option: {meta?: Metadata}): Promise<RpcResult>;
+//	function(method: string, req: Uint8Array, option: Option): Promise<RpcResult>;
 func (c *Conn) JsInvoke(this js.Value, args []js.Value) any {
 	return c.scope.Promise(func() (js.Value, js.Value) {
 		if len(args) != 3 {
@@ -64,6 +68,14 @@ func (c *Conn) JsInvoke(this js.Value, args []js.Value) any {
 		js.CopyBytesToGo(data, req)
 
 		ctx := c.ctx
+		if v := opt.Get("abort_request"); !v.IsUndefined() {
+			ctx_, cancel := context.WithCancel(ctx)
+			ctx = ctx_
+			v.Call("then", c.scope.FuncOf(func(this js.Value, args []js.Value) any {
+				cancel()
+				return js.Undefined()
+			}))
+		}
 
 		meta := metadata.MD{}
 		if v := opt.Get("meta"); v.Type() == js.TypeObject {

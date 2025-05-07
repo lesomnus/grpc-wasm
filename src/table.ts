@@ -2,15 +2,15 @@ export class Table<K extends number, V> {
 	// 0 is reserved.
 	// Negative numbers are considered to be an error.
 	private ticket: K = 1 as K;
-	private conns = new Map<K, V>();
+	private values = new Map<K, V>();
 
-	set(conn: V): K {
+	add(v: V): K {
 		const n = this.ticket++ as K;
-		this.conns.set(n, conn);
+		this.values.set(n, v);
 		return n;
 	}
 	get(id: K): V | undefined {
-		return this.conns.get(id);
+		return this.values.get(id);
 	}
 	must(id: K): V {
 		const v = this.get(id);
@@ -21,7 +21,7 @@ export class Table<K extends number, V> {
 	}
 	delete(id: K): V | undefined {
 		const v = this.get(id);
-		if (v) this.conns.delete(id);
+		if (v) this.values.delete(id);
 		return v;
 	}
 }

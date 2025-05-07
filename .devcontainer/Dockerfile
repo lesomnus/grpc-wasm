@@ -28,8 +28,6 @@ RUN TEMP=$(mktemp -d); \
 USER hypnos
 
 RUN  echo \
-		entgo.io/ent/cmd/ent@b1786895ce976a38722c6aeb1e3ba679d23786a9 \
-		github.com/yoheimuta/protolint/cmd/protolint@latest \
 		google.golang.org/protobuf/cmd/protoc-gen-go@v1.36 \
 		google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5 \
 	| xargs -n1 go install
