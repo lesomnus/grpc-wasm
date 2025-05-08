@@ -38,6 +38,16 @@ describe("conn", () => {
 	const invokeOnce = (m: EchoRequest, option: InvokeOption) =>
 		invoke("Once", EchoRequest, EchoResponse, m, option);
 
+	test("transfer", async () => {
+		const req: EchoRequest = {
+			message: "Lebowski",
+			circularShift: 3,
+			dateCreated: Timestamp.now(),
+		};
+		const data = EchoRequest.toBinary(req);
+		const rst = await conn.invoke(`/echo.EchoService/Once`, data, {});
+		expect(data).lengthOf(0);
+	});
 	test("unary", async () => {
 		const req: EchoRequest = {
 			message: "Lebowski",

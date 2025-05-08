@@ -6,6 +6,7 @@ import { expose } from "threads/worker";
 
 import "./wasm_exec";
 import { Defer } from "./defer";
+import { move } from "./move";
 import { Table } from "./table";
 import type * as types from "./types";
 import type { Go } from "./wasm_exec";
@@ -213,9 +214,10 @@ expose({
 		const call_id = calls.add({ cancel, result });
 		return Promise.resolve(call_id);
 	},
-	recv(id) {
+	async recv(id) {
 		const call = calls.must(id);
-		return call.result;
+		const v = await call.result;
+		return move(v, [v.response.buffer]);
 	},
 	cancel(id) {
 		const call = calls.get(id);
@@ -259,8 +261,13 @@ expose({
 		const stream = streams.must(id);
 		return stream.send(req);
 	},
-	stream_recv(id) {
+	async stream_recv(id) {
 		const stream = streams.must(id);
-		return stream.recv();
+		const v = await stream.recv();
+		if (v.done) {
+			return v;
+		} else {
+			return move(v, [v.response.buffer]);
+		}
 	},
 } satisfies BridgeWorker);

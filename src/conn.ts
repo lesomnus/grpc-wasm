@@ -1,3 +1,4 @@
+import { move } from "./move";
 import {
 	BidiStream,
 	type BidiStreamingClient,
@@ -39,7 +40,7 @@ export class ClientConn implements Conn {
 	async invoke(method: string, req: Uint8Array, option: InvokeOption): Promise<RpcResult> {
 		this.throwIfClosed();
 
-		const id = await this.worker.invoke(this.id, method, req, {
+		const id = await this.worker.invoke(this.id, method, move(req, [req.buffer]), {
 			meta: option.meta,
 		});
 

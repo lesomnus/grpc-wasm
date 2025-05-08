@@ -50,10 +50,10 @@ const conn = await sock.dial()
 
 const msg: Echo = {
 	message: "Royale with Cheese",
-	withCircularShift: 6n
+	circularShift: 6n
 };
 const req = Echo.toBinary(msg)
-const rst = await conn.invoke("/echo.EchoService/Unary", req, {});
+const rst = await conn.invoke("/echo.EchoService/Once", req, {});
 const res = Echo.fromBinary(rst.response);
 
 console.log(res.message)
@@ -76,7 +76,7 @@ const transport = new GrpcWasmTransport({ conn });
 const client = new EchoServiceClient(transport);
 const { response } = await client.Once({
 	message: "Royale with Cheese",
-	withCircularShift: 6n
+	circularShift: 6n
 })
 
 console.log(response.message)
