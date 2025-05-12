@@ -2,8 +2,7 @@
 // because the worker environment lacks certain global
 // variables required by the "threads" module.
 import { Transfer } from "threads/worker";
-import type { TransferListItem } from "worker_threads";
 
-export function move<T>(v: T, transfer: TransferListItem[]): T {
+export function move<T>(v: T, transfer: Transferable[]): T {
 	return Transfer(v, transfer) as unknown as T;
 }

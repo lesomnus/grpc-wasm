@@ -25,7 +25,7 @@ import type { GrpcWasmOptions } from "./options";
 export class GrpcWasmTransport implements RpcTransport {
 	constructor(private readonly defaultOptions: GrpcWasmOptions) {}
 
-	private get conn(): Conn {
+	private get conn(): Promise<Conn> {
 		return this.defaultOptions.conn;
 	}
 
@@ -70,7 +70,12 @@ export class GrpcWasmTransport implements RpcTransport {
 
 		const req = method.I.toBinary(input, options.binaryOptions);
 		this.conn
-			.invoke(this.full_method_of(method), req, { meta: normalize_meta(options.meta), signal })
+			.then((conn) =>
+				conn.invoke(this.full_method_of(method), req, {
+					meta: normalize_meta(options.meta),
+					signal,
+				}),
+			)
 			.then((result) => {
 				const st: RpcStatus = {
 					code: GrpcStatusCode[result.status.code],
@@ -126,7 +131,9 @@ export class GrpcWasmTransport implements RpcTransport {
 		trailer.catch(() => {});
 
 		const req = method.I.toBinary(input, options.binaryOptions);
-		const stream = this.conn.open_server_stream(this.full_method_of(method), req, {});
+		const stream = this.conn.then((conn) =>
+			conn.open_server_stream(this.full_method_of(method), req, {}),
+		);
 		const ostream = new RpcOutputStreamController<O>();
 		const ostream_set_error = (err: Error) => {
 			if (ostream.closed) return;
@@ -202,7 +209,9 @@ export class GrpcWasmTransport implements RpcTransport {
 		status.catch(() => {});
 		trailer.catch(() => {});
 
-		const stream = this.conn.open_client_stream(this.full_method_of(method), {});
+		const stream = this.conn.then((conn) =>
+			conn.open_client_stream(this.full_method_of(method), {}),
+		);
 		const istream = new GrpcInputStreamWrapper<I, ClientStreamingClient>(
 			stream,
 			(m) => method.I.toBinary(m, options.binaryOptions),
@@ -255,7 +264,7 @@ export class GrpcWasmTransport implements RpcTransport {
 		status.catch(() => {});
 		trailer.catch(() => {});
 
-		const stream = this.conn.open_bidi_stream(this.full_method_of(method), {});
+		const stream = this.conn.then((conn) => conn.open_bidi_stream(this.full_method_of(method), {}));
 		const ostream = new RpcOutputStreamController<O>();
 		const istream = new GrpcInputStreamWrapper<I, BidiStreamingClient>(
 			stream,
@@ -314,8 +323,9 @@ export class GrpcWasmTransport implements RpcTransport {
 		return new DuplexStreamingCall<I, O>(method, meta, istream, header, ostream, status, trailer);
 	}
 
-	close() {
-		return this.conn.close();
+	async close(): Promise<void> {
+		const conn = await this.conn;
+		return conn.close();
 	}
 }
 

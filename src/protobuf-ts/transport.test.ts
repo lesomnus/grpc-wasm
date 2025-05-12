@@ -12,7 +12,7 @@ import { sleep } from "../test/util";
 async function make_transport() {
 	const p = new URL("../test/echobridge.wasm", import.meta.url);
 	const sock = await open(p.toString());
-	const conn = await sock.dial();
+	const conn = sock.dial();
 	return new GrpcWasmTransport({ conn });
 }
 
