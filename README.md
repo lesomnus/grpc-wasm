@@ -63,6 +63,18 @@ await conn.close()
 await sock.close()
 ```
 
+#### Bundle with Vite
+
+```ts
+import { open } from "grpc-wasm";
+import workerUrl from "grpc-wasm/worker?worker&url";
+
+const sock = await open('path/to/your/bridge.wasm', { workerUrl })
+...
+```
+
+It works for both development and production build.
+
 ### with [timostamm/protobuf-ts](https://github.com/timostamm/protobuf-ts)
 
 ```ts

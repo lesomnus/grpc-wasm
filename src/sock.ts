@@ -22,7 +22,14 @@ class ClientSock {
 	}
 }
 
-export async function open(app: string | WebAssembly.Module): Promise<Sock> {
+export type OpenOption = {
+	workerUrl?: string;
+};
+
+export async function open(
+	app: string | WebAssembly.Module,
+	option: OpenOption = {},
+): Promise<Sock> {
 	let w: Worker;
 	if (import.meta.env.DEV) {
 		w = new Worker("./worker.ts", {
@@ -30,8 +37,10 @@ export async function open(app: string | WebAssembly.Module): Promise<Sock> {
 			type: "module",
 		});
 	} else {
-		w = new Worker("./worker.es.js", {
-			_baseURL: import.meta.url,
+		const path = option.workerUrl ?? "./worker.es.js";
+		const base = option.workerUrl === undefined ? undefined : import.meta.url;
+		w = new Worker(path, {
+			_baseURL: base,
 			type: "module",
 		});
 	}
