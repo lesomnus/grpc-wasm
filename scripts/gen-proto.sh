@@ -15,10 +15,12 @@ cd "$__root"
 PROTO_ROOT="$__root/proto"
 OUTPUT_DIR_GO="$__root/internal/echo"
 OUTPUT_DIR_TS="$__root/src/test/proto"
+OUTPUT_DIR_ES="$__root/src/test/@bufbuild/proto"
 MODULE_NAME="github.com/lesomnus/grpc-wasm/internal/echo"
 
 protoc \
 	--plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts \
+	--plugin=protoc-gen-es=./node_modules/.bin/protoc-gen-es \
 	--proto_path=${PROTO_ROOT} \
 	\
 	--go_out=${OUTPUT_DIR_GO} \
@@ -30,5 +32,8 @@ protoc \
 	\
 	--ts_out=${OUTPUT_DIR_TS} \
 	--ts_opt=server_generic \
+	\
+	--es_out=${OUTPUT_DIR_ES} \
+	--es_opt=target=ts \
 	\
 	"$PROTO_ROOT"/**/*.proto

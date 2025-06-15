@@ -29,7 +29,7 @@ export class GrpcWasmTransport implements RpcTransport {
 		return this.defaultOptions.conn;
 	}
 
-	private full_method_of(method: MethodInfo) {
+	private fullMethodOf(method: MethodInfo) {
 		return `/${method.service.typeName}/${method.name}`;
 	}
 
@@ -71,7 +71,7 @@ export class GrpcWasmTransport implements RpcTransport {
 		const req = method.I.toBinary(input, options.binaryOptions);
 		this.conn
 			.then((conn) =>
-				conn.invoke(this.full_method_of(method), req, {
+				conn.invoke(this.fullMethodOf(method), req, {
 					meta: normalize_meta(options.meta),
 					signal,
 				}),
@@ -132,7 +132,7 @@ export class GrpcWasmTransport implements RpcTransport {
 
 		const req = method.I.toBinary(input, options.binaryOptions);
 		const stream = this.conn.then((conn) =>
-			conn.open_server_stream(this.full_method_of(method), req, {}),
+			conn.open_server_stream(this.fullMethodOf(method), req, {}),
 		);
 		const ostream = new RpcOutputStreamController<O>();
 		const ostream_set_error = (err: Error) => {
@@ -209,9 +209,7 @@ export class GrpcWasmTransport implements RpcTransport {
 		status.catch(() => {});
 		trailer.catch(() => {});
 
-		const stream = this.conn.then((conn) =>
-			conn.open_client_stream(this.full_method_of(method), {}),
-		);
+		const stream = this.conn.then((conn) => conn.open_client_stream(this.fullMethodOf(method), {}));
 		const istream = new GrpcInputStreamWrapper<I, ClientStreamingClient>(
 			stream,
 			(m) => method.I.toBinary(m, options.binaryOptions),
@@ -264,7 +262,7 @@ export class GrpcWasmTransport implements RpcTransport {
 		status.catch(() => {});
 		trailer.catch(() => {});
 
-		const stream = this.conn.then((conn) => conn.open_bidi_stream(this.full_method_of(method), {}));
+		const stream = this.conn.then((conn) => conn.open_bidi_stream(this.fullMethodOf(method), {}));
 		const ostream = new RpcOutputStreamController<O>();
 		const istream = new GrpcInputStreamWrapper<I, BidiStreamingClient>(
 			stream,
