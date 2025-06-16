@@ -13,20 +13,37 @@ import {
 	Code,
 	ConnectError,
 	type ContextValues,
+	type Interceptor,
+	type StreamRequest,
 	type StreamResponse,
 	type Transport,
+	type UnaryRequest,
 	type UnaryResponse,
+	createContextValues,
 } from "@connectrpc/connect";
+
+import type { GrpcWasmOptions } from "./options";
 
 import type { Conn } from "../conn";
 import type { Metadata } from "../types";
-import type { GrpcWasmOptions } from "./options";
+
+type AnyFn = (req: UnaryRequest | StreamRequest) => Promise<UnaryResponse | StreamResponse>;
 
 export class GrpcWasmTransport implements Transport {
-	constructor(private readonly defaultOptions: GrpcWasmOptions) {}
+	private readonly conn: Promise<Conn>;
+	private readonly interceptors: Interceptor[];
 
-	private get conn(): Promise<Conn> {
-		return this.defaultOptions.conn;
+	constructor(private readonly defaultOptions: GrpcWasmOptions) {
+		this.conn = defaultOptions.conn;
+		this.interceptors = defaultOptions.interceptors ?? [];
+	}
+
+	private plan(next: AnyFn, interceptors?: Interceptor[]) {
+		interceptors ??= this.interceptors;
+		for (const i of interceptors.concat().reverse()) {
+			next = i(next);
+		}
+		return next;
 	}
 
 	private fullMethodOf(method: DescMethod) {
@@ -43,25 +60,42 @@ export class GrpcWasmTransport implements Transport {
 	): Promise<UnaryResponse<I, O>> {
 		const conn = await this.conn;
 		const name = this.fullMethodOf(method);
-		const msg = create(method.input, input);
-		const req = toBinary(method.input, msg);
 
-		const result = await conn.invoke(name, req, { signal, meta: toMeta(header) });
-		if (result.status.code !== 0) {
-			const { message, code } = result.status;
-			throw new ConnectError(message, code);
-		}
-
-		const res = fromBinary(method.output, result.response);
-		return {
+		signal ??= new AbortController().signal; // TODO
+		contextValues ??= createContextValues();
+		const req: UnaryRequest<I, O> = {
 			service: method.parent,
-			header: toHeaders(result.header),
-			trailer: toHeaders(result.trailer),
+			requestMethod: "", // N/A
+			url: "", // N/A
+			signal, // TODO:
+			header: new Headers(header),
+			contextValues,
 
 			stream: false,
-			message: res,
+			message: create(method.input, input),
 			method,
 		};
+
+		const run = this.plan((async ({ signal, header, message, method }: UnaryRequest<I, O>) => {
+			const txData = toBinary(req.method.input, req.message);
+			const result = await conn.invoke(name, txData, { signal, meta: toMeta(header) });
+			if (result.status.code !== 0) {
+				const { message, code } = result.status;
+				throw new ConnectError(message, code);
+			}
+
+			const rxData = fromBinary(method.output, result.response);
+			return {
+				service: method.parent,
+				header: toHeaders(result.header),
+				trailer: toHeaders(result.trailer),
+
+				stream: false,
+				message: rxData,
+				method,
+			};
+		}) as unknown as AnyFn);
+		return run(req) as Promise<UnaryResponse<I, O>>;
 	}
 
 	async stream<I extends DescMessage, O extends DescMessage>(

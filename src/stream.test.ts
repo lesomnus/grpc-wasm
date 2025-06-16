@@ -3,7 +3,7 @@ import { assert, beforeEach, describe, expect, test } from "vitest";
 
 import { type Conn, open } from "./index";
 
-import { EchoBatchResponse, EchoRequest, EchoResponse } from "./test/proto/echo/echo";
+import { EchoBatchResponse, EchoRequest, EchoResponse } from "./@protobuf-ts/test/proto/echo/echo";
 import { sleep } from "./test/util";
 
 describe("server stream", () => {

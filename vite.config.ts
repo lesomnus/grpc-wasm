@@ -15,19 +15,25 @@ export default defineConfig({
 			entry: {
 				index: resolve(__dirname, "src/index.ts"),
 				worker: resolve(__dirname, "src/worker.ts"),
-				"protobuf-ts": resolve(__dirname, "src/protobuf-ts/index.ts"),
+				"@protobuf-ts": resolve(__dirname, "src/@protobuf-ts/index.ts"),
+				"@connectrpc": resolve(__dirname, "src/@connectrpc/index.ts"),
 			},
 			formats: ["es"],
 			fileName: (format, entryName) => `${entryName}.${format}.js`,
 		},
 		rollupOptions: {
-			external: ["@protobuf-ts/grpcweb-transport", "@protobuf-ts/runtime-rpc"],
+			external: [
+				"@bufbuild/protobuf",
+				"@connectrpc/connect",
+				"@protobuf-ts/grpcweb-transport",
+				"@protobuf-ts/runtime-rpc",
+			],
 		},
 	},
 	plugins: [
 		dts({
 			tsconfigPath: "./tsconfig.app.json",
-			exclude: ["src/**/*.test.ts", "src/test/**"],
+			exclude: ["src/@connectrpc/test", "src/@protobuf-ts/test", "src/test", "src/**/*.test.ts"],
 		}),
 	],
 	test: {},

@@ -1,12 +1,11 @@
 import { type Client, Code, ConnectError, createClient } from "@connectrpc/connect";
 import { assert, beforeEach, describe, expect, test } from "vitest";
 
-import { type EchoResponse, EchoService } from "./test/proto/echo/echo_pb";
-import { GrpcWasmTransport } from "./transport";
-
 import { Defer } from "../defer";
 import { open } from "../index";
-import { sleep } from "../test/util";
+
+import { type EchoResponse, EchoService } from "./test/proto/echo/echo_pb";
+import { GrpcWasmTransport } from "./transport";
 
 async function make_transport() {
 	const p = new URL("../test/echobridge.wasm", import.meta.url);

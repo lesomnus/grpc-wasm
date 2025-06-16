@@ -12,6 +12,7 @@ Deploy your gRPC server as WebAssembly (WASM) and communicate with browser-side 
 - [x] Server streaming call
 - [x] Client streaming call
 - [x] Bi-directional streaming call
+- [x] Support transport implementation for [connectrpc/connect-es](https://github.com/connectrpc/connect-es) 🏗️
 - [x] Support transport implementation for [timostamm/protobuf-ts](https://github.com/timostamm/protobuf-ts)
 
 ## Usage
@@ -75,11 +76,32 @@ const sock = await open('path/to/your/bridge.wasm', { workerUrl })
 
 It works for both development and production build.
 
+### with [connectrpc/connect-es](https://github.com/connectrpc/connect-es)
+
+```ts
+import { createClient } from "@connectrpc/connect";
+import { open } from "grpc-wasm";
+import { GrpcWasmTransport } from "grpc-wasm/@connectrpc";
+
+const sock = await open('path/to/your/bridge.wasm')
+const conn = await sock.dial()
+const transport = new GrpcWasmTransport({ conn });
+
+const client = createClient(EchoService, transport);
+const response = await client.Once({
+	message: "Royale with Cheese",
+	circularShift: 6n
+})
+
+console.log(response.message)
+// "Cheese Royale with "
+```
+
 ### with [timostamm/protobuf-ts](https://github.com/timostamm/protobuf-ts)
 
 ```ts
 import { open } from "grpc-wasm";
-import { GrpcWasmTransport } from "grpc-wasm/protobuf-ts";
+import { GrpcWasmTransport } from "grpc-wasm/@protobuf-ts";
 
 const sock = await open('path/to/your/bridge.wasm')
 const conn = await sock.dial()

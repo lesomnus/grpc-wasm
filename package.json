@@ -18,23 +18,25 @@
 			"import": "./dist/worker.es.js",
 			"types": "./dist/worker/index.d.ts"
 		},
-		"./protobuf-ts": {
-			"import": "./dist/protobuf-ts.es.js",
-			"types": "./dist/protobuf-ts/index.d.ts"
+		"./@connectrpc": {
+			"import": "./dist/@connectrpc.es.js",
+			"types": "./dist/@connectrpc/index.d.ts"
+		},
+		"./@protobuf-ts": {
+			"import": "./dist/@protobuf-ts.es.js",
+			"types": "./dist/@protobuf-ts/index.d.ts"
 		}
 	},
 	"types": "./dist/index.d.ts",
 	"typesVersions": {
 		"*": {
-			"protobuf-ts": [
-				"./dist/protobuf-ts/index.d.ts"
-			]
+			"@connectrpc": ["./dist/@connectrpc/index.d.ts"],
+			"@protobuf-ts": ["./dist/@protobuf-ts/index.d.ts"]
 		}
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@bufbuild/protoc-gen-es": "^2.5.2",
-		"@connectrpc/connect": "^2.0.2",
 		"@protobuf-ts/grpcweb-transport": "^2.10.0",
 		"@protobuf-ts/plugin": "^2.10.0",
 		"@types/node": "^22.15.3",
@@ -53,6 +55,7 @@
 	},
 	"peerDependencies": {
 		"@bufbuild/protobuf": "^2.5.2",
+		"@connectrpc/connect": "^2.0.2",
 		"@protobuf-ts/runtime-rpc": "^2.10.0"
 	}
 }

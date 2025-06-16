@@ -2,12 +2,12 @@ import { GrpcStatusCode } from "@protobuf-ts/grpcweb-transport";
 import { RpcError } from "@protobuf-ts/runtime-rpc";
 import { assert, beforeEach, describe, expect, test } from "vitest";
 
-import { GrpcWasmTransport } from "./transport";
-
 import { open } from "../index";
-import type { EchoResponse } from "../test/proto/echo/echo";
-import { EchoServiceClient } from "../test/proto/echo/echo.client";
 import { sleep } from "../test/util";
+
+import type { EchoResponse } from "./test/proto/echo/echo";
+import { EchoServiceClient } from "./test/proto/echo/echo.client";
+import { GrpcWasmTransport } from "./transport";
 
 async function make_transport() {
 	const p = new URL("../test/echobridge.wasm", import.meta.url);

@@ -1,11 +1,11 @@
 import { GrpcStatusCode } from "@protobuf-ts/grpcweb-transport";
 import type { MessageType } from "@protobuf-ts/runtime";
-import { assert, beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 
-import { type CallOption, type Conn, type InvokeOption, open } from "./index";
+import { type Conn, type InvokeOption, open } from "./index";
 
-import { EchoRequest, EchoResponse } from "./test/proto/echo/echo";
-import { Timestamp } from "./test/proto/google/protobuf/timestamp";
+import { EchoRequest, EchoResponse } from "./@protobuf-ts/test/proto/echo/echo";
+import { Timestamp } from "./@protobuf-ts/test/proto/google/protobuf/timestamp";
 
 describe("conn", () => {
 	let conn: Conn;
