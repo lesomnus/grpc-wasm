@@ -61,13 +61,13 @@ export class GrpcWasmTransport implements Transport {
 		const conn = await this.conn;
 		const name = this.fullMethodOf(method);
 
-		signal ??= new AbortController().signal; // TODO
+		signal ??= new AbortController().signal;
 		contextValues ??= createContextValues();
 		const req: UnaryRequest<I, O> = {
 			service: method.parent,
 			requestMethod: "", // N/A
 			url: "", // N/A
-			signal, // TODO:
+			signal,
 			header: new Headers(header),
 			contextValues,
 
@@ -124,50 +124,78 @@ export class GrpcWasmTransport implements Transport {
 
 		const conn = await this.conn;
 		const name = this.fullMethodOf(method);
-		const req = await (async () => {
-			const it = input[Symbol.asyncIterator]();
-			const { done, value } = await it.next();
-			if (done) {
-				throw new ConnectError("expected an input, but none was provided", Code.Internal);
-			}
 
-			const msg = create(method.input, value);
-			const req = toBinary(method.input, msg);
-			{
-				const { done } = await it.next();
-				if (!done) {
-					throw new ConnectError("expected there be a single input", Code.Internal);
-				}
-			}
-
-			return req;
-		})();
-
-		const stream = await conn.open_server_stream(name, req, { meta: toMeta(header) });
-		const h = await stream.header();
-
-		async function* pull(): AsyncGenerator<MessageShape<O>> {
-			while (true) {
-				const result = await stream.recv();
-				if (result.done) {
-					return;
-				}
-
-				const res = fromBinary(method.output, result.response);
-				yield res;
-			}
-		}
-
-		return {
+		signal ??= new AbortController().signal;
+		contextValues ??= createContextValues();
+		const req: StreamRequest<I, O> = {
 			service: method.parent,
-			header: toHeaders(h),
-			// TODO: I have to wait until the stream end... how?
-			trailer: new Headers(),
+			requestMethod: "", // N/A
+			url: "", // N/A
+			signal,
+			header: new Headers(header),
+			contextValues,
 
 			stream: true,
-			message: pull(),
+			message: (async function* () {
+				for await (const v of input) {
+					yield create(method.input, v);
+				}
+			})(),
 			method,
 		};
+
+		const run = this.plan((async ({ signal, header, message, method }: StreamRequest<I, O>) => {
+			const input0 = await (async () => {
+				const it = message[Symbol.asyncIterator]();
+				const { done, value } = await it.next();
+				if (done) {
+					throw new ConnectError("expected an input, but none was provided", Code.Internal);
+				}
+				if (!(await it.next()).done) {
+					throw new ConnectError("expected there be a single input", Code.Internal);
+				}
+
+				const msg = create(method.input, value);
+				return msg;
+			})();
+
+			const txData = toBinary(method.input, input0);
+			const stream = await conn.open_server_stream(name, txData, { meta: toMeta(header) });
+			const h = await stream.header();
+			async function* pull(): AsyncGenerator<MessageShape<O>> {
+				while (true) {
+					const result = await stream.recv();
+					if (result.done) {
+						return;
+					}
+
+					const res = fromBinary(method.output, result.response);
+					yield res;
+				}
+			}
+
+			if (signal.aborted) {
+				await stream.close();
+				throw new ConnectError("user abort", Code.Canceled);
+			} else {
+				signal.addEventListener("abort", () => {
+					stream.close();
+				});
+			}
+
+			return {
+				service: method.parent,
+				header: toHeaders(h),
+				// TODO: I have to wait until the stream end... how?
+				trailer: new Headers(),
+
+				stream: true,
+				message: pull(),
+				method,
+			};
+		}) as unknown as AnyFn);
+
+		return run(req) as Promise<StreamResponse<I, O>>;
 	}
 
 	async close(): Promise<void> {
@@ -195,4 +223,8 @@ function toHeaders(md: Metadata): Headers {
 		}
 	}
 	return h;
+}
+
+async function* createAsyncIterable<T>(items: T[]): AsyncIterable<T> {
+	yield* items;
 }
